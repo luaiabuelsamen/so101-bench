@@ -72,13 +72,20 @@ class JawGuard:
 
 
 def load_policy(arm: str, root: str):
+    """Returns (policy, norm_stats). The stats are not optional: the policy is
+    trained on standardised inputs/targets (lerobot 0.3.4 ignores
+    dataset_stats), and feeding raw counts sends the arm to the zero pose --
+    the first run of this script scored 0/30 with 0.0 N peak force because of
+    exactly that."""
+    import numpy as np
     from lerobot.policies.act.modeling_act import ACTPolicy
 
-    return ACTPolicy.from_pretrained(Path(root) / arm).to(DEVICE)
+    path = Path(root) / arm
+    return ACTPolicy.from_pretrained(path).to(DEVICE), np.load(path / "norm_stats.npz")
 
 
 @torch.no_grad()
-def rollout(env, policy, arm: str, guarded: bool):
+def rollout(env, policy, st, arm: str, guarded: bool):
     scene = env.scene
     scene.reset()
     policy.reset()
@@ -88,11 +95,13 @@ def rollout(env, policy, arm: str, guarded: bool):
     peak_rise, peak_force = 0.0, 0.0
     for _ in range(260):
         s = torch.as_tensor(scene.state_ticks(), dtype=torch.float32)
+        s_n = (s - torch.tensor(st["s_mean"])) / torch.tensor(st["s_std"])
         if arm != "base":
             d = (a_prev - s) if a_prev is not None else torch.zeros_like(s)
-            s_in = torch.cat([s, d])
+            d_n = (d - torch.tensor(st["d_mean"])) / torch.tensor(st["d_std"])
+            s_in = torch.cat([s_n, d_n])
         else:
-            s_in = s
+            s_in = s_n
         obs = {
             "observation.state": s_in.unsqueeze(0).to(DEVICE),
             "observation.images.front": torch.as_tensor(scene.image("front"))
@@ -101,7 +110,8 @@ def rollout(env, policy, arm: str, guarded: bool):
                 scene.image("gripper_fpv")
             ).permute(2, 0, 1).float().div(255).unsqueeze(0).to(DEVICE),
         }
-        action = policy.select_action(obs).squeeze(0).cpu()
+        a_n = policy.select_action(obs).squeeze(0).cpu()
+        action = a_n * torch.tensor(st["a_std"]) + torch.tensor(st["a_mean"])
         a_prev = action.clone()
         cmd = action.numpy().astype(float)
         if guarded:
@@ -139,7 +149,7 @@ def main():
           f"{'dropped':>8} {'peakF med':>10}")
     for arm in args.arms:
         try:
-            policy = load_policy(arm, args.ckpt)
+            policy, st = load_policy(arm, args.ckpt)
         except Exception as e:
             print(f"{arm}: checkpoint not found ({e})")
             continue
@@ -153,7 +163,8 @@ def main():
                     crush_newtons=None if crush <= 0 else crush,
                     expert=ExpertConfig(),
                 )
-                outs = [rollout(env, policy, arm, guarded) for _ in range(EPISODES)]
+                outs = [rollout(env, policy, st, arm, guarded)
+                        for _ in range(EPISODES)]
                 env.close()
                 k = sum(o["placed"] for o in outs)
                 lo, hi = wilson(k, EPISODES)

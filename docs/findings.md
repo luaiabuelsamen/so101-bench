@@ -655,3 +655,40 @@ so the deployable scripted system sits at 47-67%, which none of the BC
 policies approach. On this task, at this data scale, script-plus-perception
 remains the stronger engineering; the learning contribution is the mechanism
 evidence above.
+
+## The guard wrapper: safety as architecture, on real learned policies
+
+The same three checkpoints, identical paired episodes, raw versus wrapped in
+the ~30-line jaw guard (stall-detected seating + a 4-count squeeze cap; only
+bus-observable signals, no retraining, no object knowledge). Crush counts per
+30 episodes:
+
+| arm | tier | raw | guarded |
+|---|---|---|---|
+| base | 120 N | 13 | **1** |
+| base | 60 N | 15 | **1** |
+| delta | 120 N | 6 | **0** |
+| delta | 60 N | 13 | **0** |
+| delta_q16 | 120 N | 16 | **0** |
+| delta_q16 | 60 N | 22 | **1** |
+
+**Totals across all crush tiers: 85/180 raw, 3/180 guarded -- 96% of crush
+events eliminated** on identical checkpoints and episodes. Median peak force
+drops from 33-131 N (arm-dependent) to 13-26 N wrapped. The channel and the
+guard stack: delta's learned gentleness halves what base does, and the guard
+zeroes the remainder.
+
+Two honest caveats, stated with the result:
+
+* **Task success stays at the floor either way** (0-2/30 wrapped): the guard
+  bounds force, it does not teach the grasp-to-lift commitment the
+  demonstrations never covered.
+* **The guard removes successes a policy earned by over-gripping.** The q16
+  arm lifted 7/30 at the no-limit tier by squeezing at a 131 N median; capped
+  at seat+4 counts those successes vanish. A force bound is universal -- it
+  also binds force a sloppy policy was exploiting as a crutch.
+
+The closing statement of the simulation study: **on a position-servo gripper
+with no force sensor, gentleness can be learned from the tracking-error
+channel at native resolution, and safety is better made architectural -- a
+bus-observable guard that transfers to any policy, at a cost of 30 lines.**

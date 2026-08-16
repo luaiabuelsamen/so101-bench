@@ -1,0 +1,182 @@
+[
+  {
+    "arm": "base",
+    "crush": -1.0,
+    "guarded": false,
+    "success": 0,
+    "episodes": 30,
+    "crushed": 0,
+    "dropped": 1,
+    "peak_force_median": 37.9
+  },
+  {
+    "arm": "base",
+    "crush": -1.0,
+    "guarded": true,
+    "success": 0,
+    "episodes": 30,
+    "crushed": 0,
+    "dropped": 0,
+    "peak_force_median": 13.9
+  },
+  {
+    "arm": "base",
+    "crush": 120.0,
+    "guarded": false,
+    "success": 0,
+    "episodes": 30,
+    "crushed": 13,
+    "dropped": 0,
+    "peak_force_median": 33.1
+  },
+  {
+    "arm": "base",
+    "crush": 120.0,
+    "guarded": true,
+    "success": 0,
+    "episodes": 30,
+    "crushed": 1,
+    "dropped": 0,
+    "peak_force_median": 14.2
+  },
+  {
+    "arm": "base",
+    "crush": 60.0,
+    "guarded": false,
+    "success": 0,
+    "episodes": 30,
+    "crushed": 15,
+    "dropped": 0,
+    "peak_force_median": 33.1
+  },
+  {
+    "arm": "base",
+    "crush": 60.0,
+    "guarded": true,
+    "success": 0,
+    "episodes": 30,
+    "crushed": 1,
+    "dropped": 0,
+    "peak_force_median": 14.2
+  },
+  {
+    "arm": "delta",
+    "crush": -1.0,
+    "guarded": false,
+    "success": 2,
+    "episodes": 30,
+    "crushed": 0,
+    "dropped": 8,
+    "peak_force_median": 44.7
+  },
+  {
+    "arm": "delta",
+    "crush": -1.0,
+    "guarded": true,
+    "success": 0,
+    "episodes": 30,
+    "crushed": 0,
+    "dropped": 0,
+    "peak_force_median": 26.3
+  },
+  {
+    "arm": "delta",
+    "crush": 120.0,
+    "guarded": false,
+    "success": 2,
+    "episodes": 30,
+    "crushed": 6,
+    "dropped": 2,
+    "peak_force_median": 47.8
+  },
+  {
+    "arm": "delta",
+    "crush": 120.0,
+    "guarded": true,
+    "success": 0,
+    "episodes": 30,
+    "crushed": 0,
+    "dropped": 0,
+    "peak_force_median": 26.3
+  },
+  {
+    "arm": "delta",
+    "crush": 60.0,
+    "guarded": false,
+    "success": 0,
+    "episodes": 30,
+    "crushed": 13,
+    "dropped": 0,
+    "peak_force_median": 49.2
+  },
+  {
+    "arm": "delta",
+    "crush": 60.0,
+    "guarded": true,
+    "success": 0,
+    "episodes": 30,
+    "crushed": 0,
+    "dropped": 0,
+    "peak_force_median": 26.3
+  },
+  {
+    "arm": "delta_q16",
+    "crush": -1.0,
+    "guarded": false,
+    "success": 7,
+    "episodes": 30,
+    "crushed": 0,
+    "dropped": 14,
+    "peak_force_median": 131.4
+  },
+  {
+    "arm": "delta_q16",
+    "crush": -1.0,
+    "guarded": true,
+    "success": 0,
+    "episodes": 30,
+    "crushed": 0,
+    "dropped": 0,
+    "peak_force_median": 12.9
+  },
+  {
+    "arm": "delta_q16",
+    "crush": 120.0,
+    "guarded": false,
+    "success": 1,
+    "episodes": 30,
+    "crushed": 16,
+    "dropped": 5,
+    "peak_force_median": 92.2
+  },
+  {
+    "arm": "delta_q16",
+    "crush": 120.0,
+    "guarded": true,
+    "success": 0,
+    "episodes": 30,
+    "crushed": 0,
+    "dropped": 0,
+    "peak_force_median": 12.6
+  },
+  {
+    "arm": "delta_q16",
+    "crush": 60.0,
+    "guarded": false,
+    "success": 0,
+    "episodes": 30,
+    "crushed": 22,
+    "dropped": 0,
+    "peak_force_median": 57.7
+  },
+  {
+    "arm": "delta_q16",
+    "crush": 60.0,
+    "guarded": true,
+    "success": 0,
+    "episodes": 30,
+    "crushed": 1,
+    "dropped": 0,
+    "peak_force_median": 12.6
+  }
+]
