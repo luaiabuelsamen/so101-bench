@@ -3,7 +3,7 @@
 One-time dataset upload (550 MB), from the repo root:
 
     modal volume create so101-bench
-    modal volume put so101-bench data/demos_native demos_native
+    modal volume put so101-bench data/demos_v4 demos_v4
 
 Then the full grid (3 arms x 5 seeds, parallel containers):
 
@@ -34,7 +34,8 @@ from __future__ import annotations
 import modal
 
 GPU = "H100"
-STEPS = 8000
+STEPS = 50000
+IMAGE = 224
 
 app = modal.App("so101-bench-act")
 vol = modal.Volume.from_name("so101-bench", create_if_missing=True)
@@ -70,10 +71,11 @@ def train_one(arm: str, seed: int) -> str:
         "--seed", str(seed),
         "--steps", str(STEPS),
         "--batch", "64",                       # H100 headroom; lr unchanged
-        "--root", "/vol/demos_native",
+        "--image-size", str(IMAGE),
+        "--root", "/vol/demos_v4",
         "--out", "/vol/outputs/checkpoints",
-        "--eval-episodes", "30",
-        "--eval-crush", "-1", "120", "60",
+        "--eval-episodes", "100",
+        "--eval-crush", "-1", "120",
         "--json", f"/vol/outputs/act_{arm}_s{seed}.json",
     ]
     proc = subprocess.run(cmd, cwd="/repo", capture_output=True, text=True)
@@ -85,7 +87,7 @@ def train_one(arm: str, seed: int) -> str:
 
 
 @app.local_entrypoint()
-def main(arms: str = "base,delta,delta_q16", seeds: str = "0,1,2,3,4"):
+def main(arms: str = "delta,base,base_hist", seeds: str = "0,1"):
     jobs = [(a, int(s)) for a in arms.split(",") for s in seeds.split(",")]
     print(f"launching {len(jobs)} runs on {GPU}: {jobs}")
     for result in train_one.starmap(jobs, return_exceptions=True):

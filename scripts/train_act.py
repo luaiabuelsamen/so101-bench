@@ -127,6 +127,11 @@ class FastChunkDataset(torch.utils.data.Dataset):
         s = self._quant(self.S[i])
         if self.arm == "base":
             state = (s - self.s_mean) / self.s_std
+        elif self.arm == "hist":
+            a_prev = s if self.first[i] else self.A_prev[i]
+            state = np.concatenate(
+                [(s - self.s_mean) / self.s_std, (a_prev - self.a_mean) / self.a_std]
+            )
         else:
             delta = np.zeros(6, np.float32) if self.first[i] else self.A_prev[i] - s
             state = np.concatenate(
@@ -151,7 +156,7 @@ class FastChunkDataset(torch.utils.data.Dataset):
         return item
 
 
-def build_policy(state_dim: int):
+def build_policy(state_dim: int, image_size: int = 96):
     from lerobot.configs.types import FeatureType, PolicyFeature
     from lerobot.policies.act.configuration_act import ACTConfig
     from lerobot.policies.act.modeling_act import ACTPolicy
@@ -159,9 +164,11 @@ def build_policy(state_dim: int):
     cfg = ACTConfig(
         input_features={
             "observation.state": PolicyFeature(FeatureType.STATE, (state_dim,)),
-            "observation.images.front": PolicyFeature(FeatureType.VISUAL, (3, 96, 96)),
+            "observation.images.front": PolicyFeature(
+                FeatureType.VISUAL, (3, image_size, image_size)
+            ),
             "observation.images.gripper_fpv": PolicyFeature(
-                FeatureType.VISUAL, (3, 96, 96)
+                FeatureType.VISUAL, (3, image_size, image_size)
             ),
         },
         output_features={"action": PolicyFeature(FeatureType.ACTION, (6,))},
@@ -181,9 +188,10 @@ def build_policy(state_dim: int):
 def train(args):
     ds = load_dataset(args.root)
     quantum = 16.0 if args.arm == "delta_q16" else 1.0
-    wrapped = FastChunkDataset(ds, "delta" if args.arm != "base" else "base", quantum)
+    mode = {"base": "base", "base_hist": "hist"}.get(args.arm, "delta")
+    wrapped = FastChunkDataset(ds, mode, quantum)
     state_dim = 6 if args.arm == "base" else 12
-    policy = build_policy(state_dim).to(DEVICE)
+    policy = build_policy(state_dim, args.image_size).to(DEVICE)
     policy.train()
 
     loader = torch.utils.data.DataLoader(
@@ -254,7 +262,7 @@ def evaluate(policy, data, args):
         env = DemoEnv(
             seed=1000,
             cameras=("front", "gripper_fpv"),
-            image_size=96,
+            image_size=args.image_size,
             stride=2,
             obs_quantum=quantum,          # ONLINE coarsening at eval
             crush_newtons=None if crush <= 0 else crush,
@@ -271,12 +279,16 @@ def evaluate(policy, data, args):
             for _t in range(260):        # 260 x (2/30 s) ~ 17 s budget
                 s = torch.as_tensor(scene.state_ticks(), dtype=torch.float32)
                 s_n = (s - torch.from_numpy(data.s_mean)) / torch.from_numpy(data.s_std)
-                if args.arm != "base":
+                if args.arm == "base":
+                    s_in = s_n
+                elif args.arm == "base_hist":
+                    ap = a_prev if a_prev is not None else s
+                    ap_n = (ap - torch.from_numpy(data.a_mean)) / torch.from_numpy(data.a_std)
+                    s_in = torch.cat([s_n, ap_n])
+                else:
                     d = (a_prev - s) if a_prev is not None else torch.zeros_like(s)
                     d_n = (d - torch.from_numpy(data.d_mean)) / torch.from_numpy(data.d_std)
                     s_in = torch.cat([s_n, d_n])
-                else:
-                    s_in = s_n
                 obs = {
                     "observation.state": s_in.unsqueeze(0).to(DEVICE),
                     "observation.images.front": torch.as_tensor(
@@ -318,8 +330,10 @@ def evaluate(policy, data, args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--arm", choices=("base", "delta", "delta_q16"),
-                        required=True)
+    parser.add_argument(
+        "--arm", choices=("base", "delta", "delta_q16", "base_hist"), required=True
+    )
+    parser.add_argument("--image-size", type=int, default=96)
     parser.add_argument("--root", default="data/demos_native")
     parser.add_argument("--out", default="checkpoints/act")
     parser.add_argument("--steps", type=int, default=8000)
