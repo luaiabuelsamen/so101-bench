@@ -204,9 +204,19 @@ def train(args):
     opt = torch.optim.AdamW(policy.parameters(), lr=1e-4, weight_decay=1e-4)
     scaler = torch.amp.GradScaler(enabled=DEVICE == "cuda")
 
-    loss_log = Path("results") / f"act_{args.arm}_loss.csv"
-    loss_log.parent.mkdir(exist_ok=True)
+    tag = args.arm if args.seed == 0 else f"{args.arm}_s{args.seed}"
+    loss_log = Path(args.out) / f"{tag}_loss.csv"
+    loss_log.parent.mkdir(parents=True, exist_ok=True)
     loss_log.write_text("step,loss,it_per_s\n")
+    wb = None
+    if args.wandb:
+        try:
+            import wandb as wb
+            wb.init(project="so101-bench", name=f"{args.arm}-s{args.seed}",
+                    config=vars(args))
+        except Exception as e:
+            print(f"wandb disabled: {e}")
+            wb = None
     step, t0 = 0, time.time()
     while step < args.steps:
         for batch in loader:
@@ -227,6 +237,9 @@ def train(args):
                 with loss_log.open("a") as fh:
                     fh.write(f"{step},{loss.item():.5f},"
                              f"{step / (time.time() - t0):.2f}\n")
+                if wb is not None:
+                    wb.log({"loss": loss.item(),
+                            "it_per_s": step / (time.time() - t0)}, step=step)
             if step % 500 == 0:
                 print(
                     f"  step {step}/{args.steps} loss {loss.item():.4f} "
@@ -334,6 +347,8 @@ def main():
         "--arm", choices=("base", "delta", "delta_q16", "base_hist"), required=True
     )
     parser.add_argument("--image-size", type=int, default=96)
+    parser.add_argument("--wandb", action="store_true",
+                        help="log loss to wandb (needs WANDB_API_KEY in env)")
     parser.add_argument("--root", default="data/demos_native")
     parser.add_argument("--out", default="checkpoints/act")
     parser.add_argument("--steps", type=int, default=8000)

@@ -43,7 +43,7 @@ vol = modal.Volume.from_name("so101-bench", create_if_missing=True)
 image = (
     modal.Image.debian_slim(python_version="3.10")
     .apt_install("libgl1", "libglib2.0-0", "libegl1", "libgles2")
-    .pip_install("torch", "mujoco>=3.0", "numpy", "pandas", "pyarrow")
+    .pip_install("torch", "mujoco>=3.0", "numpy", "pandas", "pyarrow", "wandb")
     .env({"MUJOCO_GL": "egl", "PYTHONPATH": "/repo/src"})
     .add_local_dir("vendor/lerobot", "/lerobot_src", copy=True)
     .run_commands("pip install '/lerobot_src[dataset]'")
@@ -53,7 +53,8 @@ image = (
 )
 
 
-@app.function(image=image, gpu=GPU, volumes={"/vol": vol}, timeout=6 * 3600)
+@app.function(image=image, gpu=GPU, volumes={"/vol": vol}, timeout=6 * 3600,
+              secrets=[modal.Secret.from_name("wandb-secret")])
 def train_one(arm: str, seed: int, steps: int = STEPS, eval_eps: int = 100) -> str:
     import subprocess
     import sys
@@ -65,6 +66,7 @@ def train_one(arm: str, seed: int, steps: int = STEPS, eval_eps: int = 100) -> s
         "--steps", str(steps),
         "--batch", "64",                       # H100 headroom; lr unchanged
         "--image-size", str(IMAGE),
+        "--wandb",
         "--root", "/vol/demos_v4",
         "--out", "/vol/outputs/checkpoints",
         "--eval-episodes", str(eval_eps),
