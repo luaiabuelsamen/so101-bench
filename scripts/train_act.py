@@ -226,12 +226,15 @@ def train(args):
                     flush=True,
                 )
             if step % 2000 == 0:
-                ck = Path(args.out) / args.arm
+                ck = Path(args.out) / (
+                    args.arm if args.seed == 0 else f"{args.arm}_s{args.seed}"
+                )
                 ck.mkdir(parents=True, exist_ok=True)
                 policy.save_pretrained(ck)      # rolling checkpoint
             if step >= args.steps:
                 break
-    out = Path(args.out) / args.arm
+    tag = args.arm if args.seed == 0 else f"{args.arm}_s{args.seed}"
+    out = Path(args.out) / tag
     out.mkdir(parents=True, exist_ok=True)
     policy.save_pretrained(out)
     np.savez(out / "norm_stats.npz", s_mean=wrapped.s_mean, s_std=wrapped.s_std,
@@ -325,7 +328,11 @@ def main():
     parser.add_argument("--eval-crush", type=float, nargs="*",
                         default=[-1.0, 120.0, 60.0])
     parser.add_argument("--json", default=None)
+    parser.add_argument("--seed", type=int, default=0,
+                        help="training seed (weights, shuffling); env eval uses its own")
     args = parser.parse_args()
+    torch.manual_seed(args.seed)
+    np.random.seed(args.seed)
 
     policy, data = train(args)
     results = evaluate(policy, data, args)
