@@ -1,0 +1,27 @@
+{
+  "arm": "delta_q16",
+  "steps": 8000,
+  "results": [
+    {
+      "crush": -1.0,
+      "success": 5,
+      "crushed": 0,
+      "dropped": 11,
+      "episodes": 30
+    },
+    {
+      "crush": 120.0,
+      "success": 0,
+      "crushed": 14,
+      "dropped": 5,
+      "episodes": 30
+    },
+    {
+      "crush": 60.0,
+      "success": 0,
+      "crushed": 21,
+      "dropped": 0,
+      "episodes": 30
+    }
+  ]
+}

@@ -611,3 +611,47 @@ error should start costing crushes) sit at F_max ~ 40-55 N -- mostly outside
 the interval the frozen protocol permits. Whether feedback matters THERE is a
 pre-registerable extension, not a rescue of this run: this run's answer stands
 as measured.
+
+## Learning: the channel regulates learned grip force, and resolution decides it
+
+Three ACT policies (lerobot 0.3.4, resnet18, chunk 30), identical 200-episode
+demonstration set, identical architecture and training budget; the ONLY
+difference is `observation.state`:
+
+    base   s[t]                    -- stock ACT (never sees the previous action)
+    delta  [s[t], a[t-1]-s[t]]     -- the characterised channel, native quantum
+    q16    same, quantised to 16 counts (offline for training, online at eval)
+
+Closed-loop, 30 episodes per tier (crush latch as in the scripted study):
+
+| tier | base | q16 | delta |
+|---|---|---|---|
+| success, no limit | 4/30 | 5/30 | 2/30 |
+| **crushes @ 120 N** | **14** | **14** | **5** |
+| **crushes @ 60 N** | **21** | **21** | **12** |
+
+Two findings, one null, all pre-registered in direction:
+
+1. **The channel halves over-force events in a cloned policy.** On video the
+   mechanism is unmistakable: the base policy squeezes blind -- 1219 N on one
+   episode, 28 N on the next, the regression-to-the-mean of close depth over
+   block widths -- while the delta policy touches at 0-36 N peak. For ACT the
+   input is not a derived feature (the architecture never sees a[t-1]), so
+   this is the channel supplying genuinely new information at the input.
+2. **Sixteen-count resolution erases the effect exactly** -- q16's crush counts
+   match base digit for digit (14/14, 21/21). The learned-policy mirror of the
+   scripted resolution cliff, at the same quantum, by an independent method.
+3. **No input fixes task success** (2-5/30 everywhere): both informed and
+   blind policies stall at the grasp-to-lift commitment. This is the
+   demonstrated coverage gap -- the demos' trajectory manifold holds 92% of
+   its variance in 2 PCs and contains no recovery behaviour, so any deviation
+   at the contact boundary is out of distribution. A perturbed-collection
+   pass (expert corrections after injected kicks) is the identified fix and is
+   future work, not folded into this result.
+
+Reference bar, measured: the scripted expert with a noisy pose estimate
+(sigma = 5/10/20 mm, modelling a perception front-end) places 20/14/4 of 30 --
+so the deployable scripted system sits at 47-67%, which none of the BC
+policies approach. On this task, at this data scale, script-plus-perception
+remains the stronger engineering; the learning contribution is the mechanism
+evidence above.

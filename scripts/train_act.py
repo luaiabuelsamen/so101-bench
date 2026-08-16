@@ -304,8 +304,8 @@ def evaluate(policy, data, args):
             n_drop += picked and not placed and not scene.crushed
             env.scene.reset()
         results.append(
-            dict(crush=crush, success=n_ok, crushed=n_crush, dropped=n_drop,
-                 episodes=args.eval_episodes)
+            dict(crush=float(crush), success=int(n_ok), crushed=int(n_crush),
+                 dropped=int(n_drop), episodes=int(args.eval_episodes))
         )
         print(
             f"  crush {crush}: success {n_ok}/{args.eval_episodes} "
