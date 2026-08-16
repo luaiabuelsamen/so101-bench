@@ -45,3 +45,24 @@ is void and that is said aloud).
   expert returns to its nominal path. The pre-registered "PCA must widen"
   check named an instrument insensitive to the thing it was guarding; the
   jerk metric is the valid instrument. Stated rather than silently swapped.
+
+## Round 2, pre-registered at ~02:00 before any v2 verdict exists
+
+Two measurements taken while v2 trained, both n>=50:
+
+1. Replan-rate hypothesis FALSIFIED: n_action_steps=5 on the v1 base
+   checkpoint destroys even reaching (45/50 -> 5/50). Chunked open-loop
+   execution protects this policy; staleness is not the lift blocker.
+2. The demos' hold-state grip depth is a DELTA FUNCTION: |jaw delta| during
+   the post-grip hold has p10 = median = p90 = 19 counts in demos_native
+   (v2: 19-24), while trained policies hold anywhere in 28-1219 N. The
+   policy's hold states are maximally OOD in exactly this coordinate, and
+   velocity kicks cannot diversify it (the regulator restores depth).
+   Expert robustness across targets measured: 15/25/40 counts -> 10-11/12,
+   8 counts -> 5/12 (physical floor).
+
+Round 2 therefore: demos_v3 = kicks + grip_target ~ U[12,45] counts per
+episode; verification gate REQUIRES the hold-depth p90-p10 spread >= 10
+counts (v1/v2: ~0-5); retrain base 12k; eval n=50; funnel n=100. Runs
+automatically after the v2 pipeline UNLESS v2's base funnel already shows
+lift|seat >= 0.40. Primary readout unchanged: lift|seat vs the 16% baseline.
