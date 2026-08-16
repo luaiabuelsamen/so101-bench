@@ -189,6 +189,11 @@ class DemoEnv:
             if kept % 10 == 0:
                 log.info("%d/%d kept, %d attempted", kept, episodes, attempted)
 
+        # Flush the writer's buffered episode metadata. Without this, datasets
+        # whose episode count never crosses the metadata buffer threshold have
+        # an empty meta/episodes, and LeRobotDataset then falls back to a hub
+        # lookup that 404s -- small smoke datasets hit this every time.
+        dataset.finalize()
         report = CollectionReport(str(root), kept, attempted)
         log.info(
             "wrote %s: %d episodes from %d attempts (%.0f%% yield)",
