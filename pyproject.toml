@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "so101-bench"
+version = "0.1.0"
+description = "Force-aware manipulation benchmark for the SO-100/SO-101 arm"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "mujoco>=3.0",
+    "numpy>=1.24",
+]
+
+[project.optional-dependencies]
+data = ["lerobot>=0.3", "pandas>=2.0", "pyarrow>=14"]
+video = ["imageio[ffmpeg]>=2.30"]
+dev = ["pytest>=7.4", "ruff>=0.4"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+so101_bench = ["assets/*.xml", "assets/assets/*"]
+
+[tool.ruff]
+line-length = 95
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
+markers = ["slow: excluded from `make test-fast`"]
