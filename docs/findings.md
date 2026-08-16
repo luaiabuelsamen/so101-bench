@@ -342,3 +342,95 @@ pinch is nearly rigid (~2 N per encoder count against a 100 N crush budget
 gives a 50-count window, but transients traverse it in single frames at any
 commanded speed above a creep). Characterise the plant first; the audit was
 right that no amount of task-level iteration substitutes for it.
+
+## Phase 1b: validity and transition audit
+
+Three follow-ups demanded by audit before any task benchmark is run. Detector
+thresholds were frozen in advance (the expert's constants); nothing was tuned
+on any split. Full data in `results/phase1b.json`.
+
+### A. Seating detection, evaluated as a classifier
+
+Ground truth is independent of delta: the block is seated when it is in
+simultaneous contact with a fixed-jaw pad and a moving-jaw pad. 90 closing
+passes over widths x yaw errors (0/8/20 deg) x closing speeds x quanta:
+
+| detector | split | precision | recall | latency med | latency p95 |
+|---|---|---|---|---|---|
+| stall (windowed position) | held-out | 1.00 | **1.00** | 0.10 s | 0.53 s |
+| jump (single-frame delta) | held-out | 1.00 | 0.67 | 0.10 s | 0.23 s |
+
+The stall detector is validated; the jump detector misses a third of seatings
+and is retired as a primary.
+
+**Stated limitation:** every one of the 90 passes ended seated -- even 20 deg
+of yaw error produced no jams or escapes from a centred hover in this scene --
+so the negative class is EMPTY and the false-positive rate against
+jammed/misaligned objects is unmeasured. Precision 1.00 is on a
+negatives-free distribution. Measuring it needs adversarial initial poses
+(deliberate lateral offsets past the pad edge, tilted objects), noted for
+Phase 2's protocol.
+
+### B. Held-out force error in control-relevant statistics
+
+The frozen pooled calibration (2.00 N/count) scored on held-out widths:
+
+| cell | bias | RMSE | p95 abs | worst abs |
+|---|---|---|---|---|
+| 8.0 mm, centred | -2.2 N | 2.5 N | 4.1 N | 4.8 N |
+| 8.0 mm, 3 mm offset | -1.5 N | 2.0 N | 3.5 N | 5.6 N |
+| 9.0 mm, centred | **+5.4 N** | 5.5 N | 8.1 N | 9.0 N |
+| 9.0 mm, 3 mm offset | **+5.6 N** | 5.8 N | 8.1 N | **9.2 N** |
+
+Worst-case error is ~2x the RMSE, and the bias is width-dependent (the global
+linear fit reads high on wider objects). The single-number error budget for a
+global calibration is **+-9.2 N worst-case**; per-width calibration would
+roughly halve it. Any Phase 2 window narrower than ~20 N is therefore not
+safely regulable with the global fit.
+
+### C. In-grasp transport confound (the decisive one)
+
+A block seated at 36 N, jaw command FROZEN, the actual transport trajectory
+run at three speeds, everything logged synchronously:
+
+| transport | true force range | delta deviation p95 | corr(delta, F) | slip |
+|---|---|---|---|---|
+| 1.0 s | **0 - 59 N** | 17.9 counts (**35.9 N**) | +0.25 | 3.6 mm |
+| 1.8 s | 0 - 63 N | 18.0 counts (36.0 N) | -0.27 | 3.1 mm |
+| 3.7 s | 36 - 44 N | 3.9 counts (7.7 N) | n/a (F ~const) | 0.3 mm |
+
+Two separate facts, cleanly split:
+
+1. **The plant itself is violent at speed.** With the jaw frozen, the TRUE
+   grip force swings 0-63 N during a 1-1.8 s transport -- momentary contact
+   loss to nearly double the seated force. This is a property of the arm and
+   contact, present with a perfect sensor; it is what the controller phase was
+   fighting.
+2. **The sensor is motion-blind at speed.** Delta departs from its calibrated
+   value by up to 36 N (p95) and its correlation with true force collapses to
+   |r| < 0.3. At the 3.7 s transport, deviation is 7.7 N p95 and the
+   calibration approximately holds. The residual is essentially uncorrelated
+   with arm acceleration magnitude (|r| <= 0.25), so a simple acceleration
+   feedforward will not rescue the fast regime.
+
+The earlier onset-ordering spread, in seconds: delta leads a 0.5 N force
+threshold by 0.7-3.0 s during sliding, the spread tracking closing speed and
+push distance -- it is a friction/obstruction signal, not force anticipation,
+and no fixed delta threshold marks the transition across speeds.
+
+### The operating envelope, as measured
+
+Delta may be read as grip force ONLY when all of the following hold:
+
+* seating confirmed by the stall detector (validated held-out at
+  precision/recall 1.00/1.00, latency p95 0.53 s; FP rate vs jams unmeasured);
+* the jaw stationary for at least 4 control frames (0.13 s);
+* arm transport at the slow tier (>= ~3.7 s for the tested trajectory), where
+  the dynamic deviation is 7.7 N p95 -- at <= 1.8 s it is 36 N and the reading
+  is meaningless;
+* object width within the calibrated 7.6-9.5 mm, load within 4-78 N;
+* an error budget of +-9.2 N worst-case (global fit) held against whatever
+  force window the task defines.
+
+Outside the envelope the controller must hold, slow down, or abort -- not
+force-regulate from delta.
