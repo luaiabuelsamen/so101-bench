@@ -692,3 +692,23 @@ The closing statement of the simulation study: **on a position-servo gripper
 with no force sensor, gentleness can be learned from the tracking-error
 channel at native resolution, and safety is better made architectural -- a
 bus-observable guard that transfers to any policy, at a cost of 30 lines.**
+
+## Autopsy: why BC sits at 5-17%, with causal attribution (results/autopsy/)
+
+Teacher forcing: both arms predict ~97% (relative) on demo states in EVERY
+phase -- the networks learned the demonstrations. Closed loop, base's decoded
+plan at its own stalls contains 6 counts of motion against the demo lift's
+471: no intention, not weak execution. Three data recipes moved every stage
+except base's commitment (lift|seat 16 -> 24 -> 22%).
+
+The counterfactual seals causality: at delta-policy stalls, zeroing the delta
+input collapses the planned lift 482 -> 35 counts (14x); restoring a
+demo-typical value raises it to 566. **The commitment decision is gated on
+the channel inside the trained network.** Grasp state is unobservable from
+joints + 96 px images; the tracking-error channel is the observation that
+makes it visible. Covariate shift is real but secondary and largely cured by
+the v2/v3 data recipes where it applies.
+
+Consequence for the thesis: the channel is not merely helpful for learned
+policies -- on this stack it is the enabling observation for contact
+commitment, shown by intervention on the trained model, not correlation.
