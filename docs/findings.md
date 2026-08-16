@@ -434,3 +434,58 @@ Delta may be read as grip force ONLY when all of the following hold:
 
 Outside the envelope the controller must hold, slow down, or abort -- not
 force-regulate from delta.
+
+## Phase 1c: adversarial negatives and the dynamic boundary
+
+Configuration v1 (stock pads, stock scene) throughout; nothing about the
+contact mechanics was changed. Detector thresholds unchanged from Phase 1b.
+
+### The stall detector against constructed negatives
+
+Eleven states including empty closure, objects outside the gap on both sides,
+corner contact, 45-degree yaw, over-width, under- and over-height:
+
+| verdict | states |
+|---|---|
+| true positive (7), latency 0.07-0.10 s | seated_control, outside_fixed, outside_moving, corner_contact, too_short, too_tall, narrow |
+| true negative (2) | empty, mostly_missing |
+| **false positive on a jam** | yaw_45deg -- block spun past 15 deg, detector still fired |
+| **false positive, early** | too_wide -- fingertip lands on top and stalls the jaw before any two-pad seat |
+
+So the honest numbers replace Phase 1b's negatives-free 1.00: on this
+adversarial set, recall for true seats stays 1.00 (7/7, including degenerate
+placements that nonetheless seated) and empty/missing closures never trigger,
+but **grasp-ready precision is 7/9 = 0.78**: the stall detector detects
+OBSTRUCTION, and a jammed or fingertip-topped object obstructs exactly like a
+seated one. Position history alone cannot distinguish them. A post-detection
+seat check (a small commanded squeeze whose delta response must match the
+calibration slope) is the obvious discriminator and is future work, stated
+rather than assumed.
+
+### The dynamic boundary (pre-declared sweep and criteria)
+
+Durations 0.7-5.0 s over the fixed trajectory, jaw frozen at a ~36 N seat.
+Criteria declared before running: C1 no contact loss (min force > 5 N),
+C2 slip < 1 mm, C3 delta residual p95 <= 4 counts, C4 force excursion <= 15 N.
+
+| duration | min force | excursion | slip | resid p95 | passes |
+|---|---|---|---|---|---|
+| 0.7 - 2.5 s | 0.2-0.3 N | 36 N | 1.6-3.6 mm | ~18 counts | no |
+| 3.0 s | 0.3 N | 36 N | 0.68 mm | 5.5 | no (C1) |
+| **3.7 s** | 36.3 N | 8.0 N | 0.26 mm | 3.9 | **yes** |
+| 5.0 s | 36.2 N | 8.0 N | 0.17 mm | 3.9 | yes |
+
+The boundary is sharp and sits between 3.0 and 3.7 s: below it the block
+momentarily LOSES CONTACT entirely (min force 0.3 N) on every run -- the
+dominant failure is C1, not sensing -- and above it every criterion clears at
+once. **Operating tier: 3.7 s** for this trajectory (~0.18 m path), published
+as the envelope's transport condition.
+
+### Envelope, final form (configuration v1)
+
+Delta supports seated, quasi-static, crush-aware gripping when: seating is
+stall-detected AND the jam/topping ambiguity is accepted or screened (0.78
+grasp-ready precision adversarially); the jaw has been stationary >= 0.13 s;
+transport follows the 3.7 s tier; width 7.6-9.5 mm; load 4-78 N; against a
++-9.2 N worst-case global-fit budget. Anything faster, unseated, or wider is
+outside the claim.

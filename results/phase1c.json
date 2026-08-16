@@ -1,0 +1,207 @@
+{
+  "adversarial": [
+    {
+      "state": "seated_control",
+      "truth": "seated",
+      "fire_frame": 185,
+      "fired_at_stop": false,
+      "verdict": "tp",
+      "latency_s": 0.06666666666666667
+    },
+    {
+      "state": "empty",
+      "truth": "no_contact",
+      "fire_frame": null,
+      "fired_at_stop": false,
+      "verdict": "tn",
+      "latency_s": null
+    },
+    {
+      "state": "outside_fixed",
+      "truth": "seated",
+      "fire_frame": 185,
+      "fired_at_stop": false,
+      "verdict": "tp",
+      "latency_s": 0.06666666666666667
+    },
+    {
+      "state": "outside_moving",
+      "truth": "seated",
+      "fire_frame": 185,
+      "fired_at_stop": false,
+      "verdict": "tp",
+      "latency_s": 0.06666666666666667
+    },
+    {
+      "state": "corner_contact",
+      "truth": "seated",
+      "fire_frame": 183,
+      "fired_at_stop": false,
+      "verdict": "tp",
+      "latency_s": 0.1
+    },
+    {
+      "state": "mostly_missing",
+      "truth": "no_contact",
+      "fire_frame": null,
+      "fired_at_stop": false,
+      "verdict": "tn",
+      "latency_s": null
+    },
+    {
+      "state": "yaw_45deg",
+      "truth": "jammed",
+      "fire_frame": 160,
+      "fired_at_stop": false,
+      "verdict": "fp_jam",
+      "latency_s": null
+    },
+    {
+      "state": "too_wide",
+      "truth": "seated",
+      "fire_frame": 175,
+      "fired_at_stop": false,
+      "verdict": "fp_early",
+      "latency_s": null
+    },
+    {
+      "state": "too_short",
+      "truth": "seated",
+      "fire_frame": 185,
+      "fired_at_stop": false,
+      "verdict": "tp",
+      "latency_s": 0.06666666666666667
+    },
+    {
+      "state": "too_tall",
+      "truth": "seated",
+      "fire_frame": 185,
+      "fired_at_stop": false,
+      "verdict": "tp",
+      "latency_s": 0.06666666666666667
+    },
+    {
+      "state": "narrow",
+      "truth": "seated",
+      "fire_frame": 220,
+      "fired_at_stop": false,
+      "verdict": "tp",
+      "latency_s": 0.06666666666666667
+    }
+  ],
+  "boundary": [
+    {
+      "duration_s": 0.7,
+      "seat_n": 36.318967930542264,
+      "min_force_n": 0.2292373498695861,
+      "excursion_n": 36.08973058067268,
+      "slip_mm": 3.228120261192898,
+      "resid_p95_counts": 18.006859642387848,
+      "resid_worst_counts": 18.04486529033634,
+      "c1": false,
+      "c2": false,
+      "c3": false,
+      "c4": false,
+      "passes": false
+    },
+    {
+      "duration_s": 1.0,
+      "seat_n": 36.318967930542264,
+      "min_force_n": 0.24490769493507178,
+      "excursion_n": 36.07406023560719,
+      "slip_mm": 3.587540679463921,
+      "resid_p95_counts": 17.946296629995203,
+      "resid_worst_counts": 18.037030117803596,
+      "c1": false,
+      "c2": false,
+      "c3": false,
+      "c4": false,
+      "passes": false
+    },
+    {
+      "duration_s": 1.4,
+      "seat_n": 36.318967930542264,
+      "min_force_n": 0.26784337114809464,
+      "excursion_n": 36.05112455939417,
+      "slip_mm": 3.461413804494853,
+      "resid_p95_counts": 17.93882281335831,
+      "resid_worst_counts": 18.025562279697084,
+      "c1": false,
+      "c2": false,
+      "c3": false,
+      "c4": false,
+      "passes": false
+    },
+    {
+      "duration_s": 1.8,
+      "seat_n": 36.318967930542264,
+      "min_force_n": 0.2595369745613154,
+      "excursion_n": 36.05943095598095,
+      "slip_mm": 3.4018804369358304,
+      "resid_p95_counts": 18.006459858414146,
+      "resid_worst_counts": 18.029715477990475,
+      "c1": false,
+      "c2": false,
+      "c3": false,
+      "c4": false,
+      "passes": false
+    },
+    {
+      "duration_s": 2.5,
+      "seat_n": 36.318967930542264,
+      "min_force_n": 0.2867198096351589,
+      "excursion_n": 36.032248120907106,
+      "slip_mm": 1.600996568302449,
+      "resid_p95_counts": 17.947026230879075,
+      "resid_worst_counts": 18.016124060453553,
+      "c1": false,
+      "c2": false,
+      "c3": false,
+      "c4": false,
+      "passes": false
+    },
+    {
+      "duration_s": 3.0,
+      "seat_n": 36.318967930542264,
+      "min_force_n": 0.3021230680907022,
+      "excursion_n": 36.01684486245156,
+      "slip_mm": 0.6790789862534922,
+      "resid_p95_counts": 5.482037594224915,
+      "resid_worst_counts": 18.00842243122578,
+      "c1": false,
+      "c2": true,
+      "c3": false,
+      "c4": false,
+      "passes": false
+    },
+    {
+      "duration_s": 3.7,
+      "seat_n": 36.318967930542264,
+      "min_force_n": 36.31333812958768,
+      "excursion_n": 8.029482418541804,
+      "slip_mm": 0.2611506579570546,
+      "resid_p95_counts": 3.854222892381559,
+      "resid_worst_counts": 4.014741209270902,
+      "c1": true,
+      "c2": true,
+      "c3": true,
+      "c4": true,
+      "passes": true
+    },
+    {
+      "duration_s": 5.0,
+      "seat_n": 36.318967930542264,
+      "min_force_n": 36.21086296510862,
+      "excursion_n": 8.02140001200793,
+      "slip_mm": 0.1652631105428434,
+      "resid_p95_counts": 3.854043974836167,
+      "resid_worst_counts": 4.010700006003965,
+      "c1": true,
+      "c2": true,
+      "c3": true,
+      "c4": true,
+      "passes": true
+    }
+  ],
+  "operating_tier_s": 3.7
+}
