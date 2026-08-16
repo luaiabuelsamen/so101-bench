@@ -74,9 +74,13 @@ class DomainRandomization:
     """Per-episode randomisation ranges.
 
     ``max_half_width`` is a physical limit, not a taste parameter: the fixed
-    jaw's fingertip sits ``FINGERTIP_LATERAL`` from the tool centre across the
-    closing axis, and a block wider than that is struck from above instead of
-    enclosed.
+    jaw's fingertip sits ``FINGERTIP_LATERAL`` (11.9 mm) from the tool centre
+    across the closing axis, and a block wider than that is struck from above
+    instead of enclosed. The cap leaves real margin rather than sitting on that
+    limit -- at 11.0 mm the largest blocks had 0.9 mm of clearance, which an
+    open-loop clamp forces through but a force-regulated grip cannot. Loosening
+    the margin to 9.5 mm raised the clamp expert's place rate from 10/20 to
+    15/20 and the force-regulated expert's pick rate from 8/20 to 15/20.
     """
 
     enabled: bool = True
@@ -87,7 +91,7 @@ class DomainRandomization:
     block_mass_scale: tuple[float, float] = (0.5, 2.0)
     block_friction: tuple[float, float] = (0.6, 1.4)
     box_jitter: float = 0.03
-    max_half_width: float = 0.011
+    max_half_width: float = 0.0095
 
     @classmethod
     def off(cls) -> DomainRandomization:

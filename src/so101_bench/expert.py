@@ -23,6 +23,7 @@ from .scene import (
     FINGERTIP_BELOW_TCP,
     JAW_OPEN,
     JAW_SHUT,
+    RAD_PER_TICK,
     TABLE_TOP,
     PickScene,
 )
@@ -54,8 +55,12 @@ class ExpertConfig:
     lift_height: float = 0.13
     grasp_dz: float = 0.0
     transport_frames: int = 55
-    grip_mode: Literal["clamp", "force"] = "clamp"
-    grip_target_counts: float = 12.0
+    grip_mode: Literal["clamp", "force", "oracle"] = "clamp"
+    #: Force command for ``force`` mode: jaw travel past the detected contact
+    #: point, in encoder counts. ~1.5 N per count at the pads.
+    grip_overshoot_counts: float = 8.0
+    #: Force command for ``oracle`` mode, in newtons of true contact force.
+    grip_target_newtons: float = 15.0
     grip_step_rad: float = 0.006
     pick_threshold: float = 0.03
     #: Accept the aligned grasp heading when its IK residual is below this
@@ -127,42 +132,117 @@ class _Waypoints:
         self.jaw = jaw
         scene.hold(np.concatenate([self.q, [self.jaw]]), settle, hook=self.hook)
 
-    def close_to_force(
+    def close_until_contact(
         self,
-        target_counts: float,
         step_rad: float,
-        frames: int = 120,
-        settle: int = 12,
-        baseline_frames: int = 10,
-    ) -> float:
-        """Close until tracking error exceeds its free-space lag by ``target_counts``.
+        stall_fraction: float = 0.3,
+        max_frames: int = 200,
+        warmup: int = 4,
+    ) -> tuple[float, bool]:
+        """Close the jaw until the servo stalls against the object.
 
-        The baseline subtraction is essential. A proportionally controlled servo
-        that is *moving* sits behind its goal whether or not it is touching
-        anything: stepping the jaw 0.006 rad per frame is 3.9 counts of command
-        travel, so the tracking error reads several counts in free space.
-        Thresholding the raw value halts the close almost immediately -- measured
-        1 pick in 15, with the jaw stopping at 1-6 counts and no contact at all.
-        Only the excess over the free-running lag is load. The same confound
-        exists on hardware.
+        Contact is detected from the *measured* jaw motion, not from the
+        tracking error: while the command advances ``step_rad`` per frame, a
+        free jaw follows at very nearly that rate and a blocked one stops dead.
+        Measured over a full close, the actual jaw moves 0.0100 rad/frame in
+        free space against a 0.0100 rad/frame command, and 0.0001 rad/frame once
+        the block stops it -- a hundredfold separation, with no calibration.
+
+        Thresholding the tracking error instead is what failed. Its free-space
+        value is not zero but a steady lag (-17 counts here), and it is not
+        steady at the start of the move: over the first eight frames the servo is
+        still accelerating and reads -6 rising to -17, so a baseline measured
+        there underestimates the lag and any small margin above it triggers
+        immediately. Brushing the block without gripping it moves the error only
+        to -19..-21 at under 6 N, well inside that band, while a real stall runs
+        to -38 and beyond. Both quantities are available on hardware; the
+        measured velocity is simply the better-conditioned one.
 
         Returns:
-            The tracking error achieved, in counts. It is quantised, so the grip
-            is commandable only to the resolution of the encoder.
+            ``(jaw_angle, contact_found)``.
         """
         scene = self.scene
-        lag: list[float] = []
-        for k in range(frames):
+        previous = float(scene.data.qpos[5])
+        for k in range(max_frames):
             if self.jaw <= JAW_SHUT:
-                break
-            if k >= baseline_frames:
-                baseline = float(np.median(lag)) if lag else 0.0
-                if abs(scene.delta()[5]) - baseline >= target_counts:
-                    break
+                return self.jaw, False
             self.jaw = max(JAW_SHUT, self.jaw - step_rad)
             scene.hold(np.concatenate([self.q, [self.jaw]]), hook=self.hook)
-            if k < baseline_frames:
-                lag.append(abs(scene.delta()[5]))
+            actual = float(scene.data.qpos[5])
+            moved = abs(actual - previous)
+            previous = actual
+            if k >= warmup and moved < stall_fraction * step_rad:
+                return self.jaw, True
+        return self.jaw, False
+
+    def grip_by_overshoot(
+        self,
+        overshoot_counts: float,
+        step_rad: float,
+        settle: int = 15,
+        ramp: int = 12,
+    ) -> float:
+        """Find contact, then squeeze a fixed number of encoder counts past it.
+
+        This is the formulation that works, and it is the one available on
+        hardware. Grip force is commanded as an integer count of jaw travel
+        beyond the contact point, so it is set by a quantity the bus can actually
+        represent: ``Goal_Position`` is an integer register, and the resolution
+        of the commanded force is exactly the encoder quantum.
+
+        The earlier formulation -- ramp at a fixed rate and stop when the
+        tracking error reaches a target -- fails for a reason worth recording.
+        Closing from ``JAW_OPEN`` to ``JAW_SHUT`` is 0.75 rad, and a 0.006 rad
+        step over 120 frames covers only 0.72, so some episodes exhausted their
+        travel before the threshold could fire while others stopped on a
+        transient having touched nothing. Measured 8 picks in 20, with grip
+        force scattered from 0 to 306 N. Detecting contact first and then
+        commanding a displacement decouples "where is the object" from "how hard
+        to squeeze", and only the second needs to be precise.
+
+        Returns:
+            Tracking error after the squeeze, in counts.
+        """
+        scene = self.scene
+        _, found = self.close_until_contact(step_rad)
+        if not found:
+            return float(scene.delta()[5])
+        return self._squeeze(self.jaw - overshoot_counts * RAD_PER_TICK, settle, ramp)
+
+    def grip_to_true_force(
+        self,
+        target_newtons: float,
+        step_rad: float,
+        max_frames: int = 60,
+        settle: int = 15,
+    ) -> float:
+        """Close until the TRUE contact force reaches ``target_newtons``.
+
+        Privileged: reads the simulator's contact solver, which no real robot
+        can. This is the upper bound on what any force controller could achieve
+        on this task, so the gap to :meth:`grip_by_overshoot` is the price of
+        having only a tracking-error proxy, and the gap from the open-loop clamp
+        to this is the total value of force feedback here.
+        """
+        scene = self.scene
+        self.close_until_contact(step_rad)
+        for _ in range(max_frames):
+            if scene.grip_force() >= target_newtons or self.jaw <= JAW_SHUT:
+                break
+            self.jaw = max(JAW_SHUT, self.jaw - step_rad * 0.25)
+            scene.hold(np.concatenate([self.q, [self.jaw]]), hook=self.hook)
+        scene.hold(np.concatenate([self.q, [self.jaw]]), settle, hook=self.hook)
+        return float(scene.delta()[5])
+
+    def _squeeze(self, target: float, settle: int, ramp: int) -> float:
+        """Ramp the jaw to ``target`` and hold, returning the resulting error."""
+        scene = self.scene
+        target = max(JAW_SHUT, target)
+        start = self.jaw
+        for k in range(ramp):
+            self.jaw = start + (target - start) * (k + 1) / ramp
+            scene.hold(np.concatenate([self.q, [self.jaw]]), hook=self.hook)
+        self.jaw = target
         scene.hold(np.concatenate([self.q, [self.jaw]]), settle, hook=self.hook)
         return float(scene.delta()[5])
 
@@ -257,9 +337,18 @@ class ScriptedExpert:
             frames=45,
         )
 
+        # The three grips differ ONLY in what signal sets the squeeze, which is
+        # what makes them a measurement rather than three implementations:
+        #   clamp  -- no force feedback at all
+        #   force  -- the quantised channel the real robot has
+        #   oracle -- true contact force, privileged, an upper bound
         if cfg.grip_mode == "force":
-            result.grip_counts = way.close_to_force(
-                cfg.grip_target_counts, cfg.grip_step_rad
+            result.grip_counts = way.grip_by_overshoot(
+                cfg.grip_overshoot_counts, cfg.grip_step_rad
+            )
+        elif cfg.grip_mode == "oracle":
+            result.grip_counts = way.grip_to_true_force(
+                cfg.grip_target_newtons, cfg.grip_step_rad
             )
         else:
             way.set_jaw(JAW_SHUT)

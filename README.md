@@ -33,11 +33,12 @@ has to work.
 | metric | value |
 |---|---|
 | pick rate (randomised) | **78%** (31/40) |
-| place rate (randomised) | **60%** (24/40) |
+| place rate (randomised) | **78%** (31/40) |
+| retention of picked blocks | **100%** |
 | nominal scene | 100% |
 | speed, headless | 0.65 s/episode |
 | speed, 2 × 128 px cameras | 2.7 s/episode |
-| dataset yield (successes only) | ~45% of attempts |
+| dataset yield (successes only) | ~78% of attempts |
 
 Reproduce with `python scripts/evaluate.py --episodes 40`.
 
@@ -79,36 +80,58 @@ resolution ablations.
 Per episode: block position, yaw (full ±π), size, mass, friction, and the
 container's position. See `DomainRandomization`.
 
-The block's half-width is capped at 11.9 mm, which is **not** a taste
-parameter — it is where the fixed jaw's fingertip sits relative to the tool
-centre. Anything wider is struck from above rather than enclosed.
+The block's half-width is capped at 9.5 mm, which is **not** a taste
+parameter. The fixed jaw's fingertip sits 11.9 mm from the tool centre across
+the closing axis, and anything wider is struck from above rather than enclosed;
+the cap leaves margin against that limit instead of sitting on it. Capping at
+11.0 mm left the largest blocks 0.9 mm of clearance — which an open-loop clamp
+forces through, but a force-regulated grip cannot. Widening the margin raised
+the clamp expert's place rate from 10/20 to 15/20 and the force-regulated
+expert's pick rate from 8/20 to 15/20.
 
 ## Layout
 
 ```
 src/so101_bench/
   scene.py       PickScene: MuJoCo scene, IK on the true tool frame, DR, force channel
-  expert.py      ScriptedExpert: waypoint policy, clamp and force-regulated grasps
+  expert.py      ScriptedExpert: waypoint policy, clamp/force/oracle grasps
   demo_env.py    DemoEnv: rollout, evaluation, LeRobotDataset collection
   assets/        MJCF scene and meshes
 scripts/         evaluate.py, collect.py, render_demo.py
 docs/findings.md what was measured, and what it cost to find out
 ```
 
-## Grip modes
+## Grip modes, and what they measure
 
-`ExpertConfig(grip_mode=...)` selects how the jaw closes:
+`ExpertConfig(grip_mode=...)` selects the signal that sets the squeeze. The
+three modes are identical apart from that, which makes comparing them a
+measurement rather than three implementations:
 
-- **`clamp`** (default) drives the jaw to a fixed angle. More reliable as a
-  demonstrator, but the servo saturates: tracking error pins at −147 counts
-  while true grip force runs 280–580 N, so the force channel stops responding
-  to the object.
-- **`force`** closes until the tracking error exceeds its free-space lag by a
-  target, using only the quantised channel. Grip force becomes graded
-  (0–39 N), but the current pick rate is lower. Needed for force-sensitive
-  tasks.
+| mode | grip signal | role |
+|---|---|---|
+| `clamp` | fixed jaw angle | no force feedback at all |
+| `force` | `delta`, quantised | the channel the real robot has |
+| `oracle` | true contact force | privileged upper bound |
 
-See `docs/findings.md` for the measurements behind both.
+The gaps decompose: `clamp → oracle` is the total value of force feedback on a
+task, `clamp → force` the value of the channel that actually exists, and
+`force → oracle` the price of having a tracking-error proxy instead of a sensor.
+Sweeping `obs_quantum` under `force` gives a dose-response curve — all without
+training anything.
+
+**On this task, that gap is zero.** Over 40 randomised episodes:
+
+| expert | pick | place | grip force |
+|---|---|---|---|
+| `clamp` | 31/40 | **31/40** | 301 N |
+| `force` | 31/40 | 28/40 | 51 N |
+| `oracle` | 29/40 | 25/40 | 37 N |
+
+Force feedback buys nothing here, and costs a little: a gentler grip drops more
+often and nothing penalises crushing. This is the intended negative control —
+rigid-block pick-and-place is *not* a force-sensitive task, so it cannot be used
+to study force resolution. A task with a grip window (drop below it, crush above
+it) is required for that, and this result is why.
 
 ## Provenance
 

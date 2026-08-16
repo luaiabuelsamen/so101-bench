@@ -78,7 +78,8 @@ the wrong side of the jaw.
 Ranking the two on IK residual alone picked the flipped heading on the nominal
 scene — residual **0.0009 mm against 0.88 mm** — and lifted the block 1.3 mm.
 Restricting the flip to a genuine fallback took the randomised rates from
-70%/55% to **78%/60%**.
+70%/55% to 78%/60%; a later widening of the graspable-width margin took the
+place rate to 78% (see *The rigid-block task does not need force*).
 
 Near-miss headings (`yaw ± 0.25`) are not offered at all: 14° of misalignment on
 a 25 mm long axis raises the effective half-width to 16.5 mm, past the 11.9 mm
@@ -119,25 +120,30 @@ Closing to a fixed jaw angle commands the jaw ~0.23 rad *past* the block. The
 servo pins against its limit and the tracking error stops responding to the
 object:
 
-| grip mode | tracking error | true grip force | corr(\|delta\|, force) |
-|---|---|---|---|
-| `clamp` | −147 counts, constant | 280–580 N | −0.33 |
-| `force` | graded | 0–39 N | **+0.50** |
+| grip mode | tracking error | true grip force |
+|---|---|---|
+| `clamp` | −147 counts, constant | 280–580 N |
+| `force` | graded, −10..−30 counts | 0–74 N |
 
 A 500 N "grasp" is a rigid clamp, and there is no gradation left to resolve.
+Correlation between `|delta|` and true force across contact frames was −0.33
+under the clamp — the sign is right but the magnitude is meaningless, because
+the error was saturated.
 
-## Free-space lag must be subtracted before thresholding
+## Free-space lag: real, but not something to threshold around
 
 A P-controlled servo that is *moving* sits behind its goal whether or not it is
 touching anything. Stepping the jaw 0.006 rad per frame is 3.9 counts of command
-travel, so the tracking error reads several counts in free space.
+travel, so the tracking error reads several counts in free space, and only the
+excess over that lag is load.
 
 Thresholding the raw value stopped the close almost immediately — **1 pick in
-15**, jaw halting at 1–6 counts with 0.00 N of actual contact. Only the excess
-over the free-running lag is load.
+15**, jaw halting at 1–6 counts with 0.00 N of contact. Subtracting a measured
+baseline first is better but still fails (**0 picks in 20**); see *Contact
+detection* below for why, and for what replaced it.
 
-This confound is not a simulation artifact. It exists on hardware, and it cannot
-be avoided there by reading a force sensor, because there isn't one.
+The confound itself is not a simulation artifact. It exists on hardware, and it
+cannot be avoided there by reading a force sensor, because there isn't one.
 
 ## Testing notes
 
@@ -151,3 +157,64 @@ easy to repeat:
   warm-starts from the hover solution; a test that does not, tests nothing.
 - Commanding the grasp configuration directly from home swings the arm through
   the block and knocks it clear. Ramp between poses.
+
+## Contact detection: use measured motion, not tracking error
+
+Regulating the grip needs a contact point. The obvious detector — threshold the
+tracking error — does not work, for reasons visible in a single logged close:
+
+```
+k    jaw_cmd   jaw_act   delta   grip
+0     0.5400    0.5488    -6.0    0.00     <- servo still accelerating
+9     0.4500    0.4756   -17.0    0.00     <- steady free-space lag
+33    0.2100    0.2388   -19.0    0.61     <- brushing, not gripping
+51    0.0300    0.0607   -20.0    6.15
+54   -0.0000    0.0588   -38.0   92.44     <- stalled; actual jaw frozen
+57   -0.0300    0.0587   -58.0  133.44
+```
+
+Three traps in that trace:
+
+1. The free-space error is not zero but a steady **-17 count** lag, purely from
+   command travel.
+2. It is not steady at the start. Over the first eight frames the servo is
+   accelerating and reads -6 rising to -17, so a baseline measured there
+   *underestimates* the lag and any small margin above it fires immediately.
+3. Brushing the object moves the error only to -19..-21 at under 6 N — inside
+   the free-space band.
+
+Thresholding `|delta|` with a 3-count margin therefore triggered in free space,
+and the subsequent squeeze started from nowhere near the object: **0 picks in
+20**, with the achieved error only -1..-6 counts.
+
+The same trace contains a far cleaner signal. A free jaw follows the command at
+0.0100 rad/frame; a blocked one moves 0.0001 rad/frame. Detecting the **stall**
+in measured position needs no baseline and no calibration, and `Present_Position`
+over time is equally available on hardware.
+
+Grip force is then commanded as a fixed **overshoot in encoder counts** past the
+detected contact point. That decouples "where is the object" from "how hard to
+squeeze", and only the second has to be precise — and it is set by an integer,
+which is exactly where the encoder quantum should enter.
+
+## The rigid-block task does not need force (negative control)
+
+Three experts differing *only* in the signal that sets the squeeze, 40 randomised
+episodes each:
+
+| expert | grip signal | pick | place | grip force |
+|---|---|---|---|---|
+| `clamp` | fixed angle | 31/40 | **31/40** | 301 N |
+| `force` | `delta`, quantised | 31/40 | 28/40 | 51 N |
+| `oracle` | true contact force | 29/40 | 25/40 | 37 N |
+
+`clamp → oracle` is **-6/40**: force feedback buys nothing here and costs a
+little, because a gentler grip drops the block more often while nothing
+penalises crushing it. At n=40 that is roughly 1.5 standard errors — no evidence
+of benefit, not evidence of harm.
+
+This is the negative control working as intended. Rigid-block pick-and-place
+cannot be used to study force resolution, and now that is measured rather than
+assumed. A grip *window* — drop below it, crush above it — is required, and the
+`oracle` expert gives the upper bound against which any such task should be
+screened before spending training time on it.
