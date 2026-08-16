@@ -1,0 +1,27 @@
+{
+  "arm": "base",
+  "steps": 12000,
+  "results": [
+    {
+      "crush": -1.0,
+      "success": 2,
+      "crushed": 0,
+      "dropped": 5,
+      "episodes": 50
+    },
+    {
+      "crush": 120.0,
+      "success": 1,
+      "crushed": 19,
+      "dropped": 4,
+      "episodes": 50
+    },
+    {
+      "crush": 60.0,
+      "success": 0,
+      "crushed": 34,
+      "dropped": 0,
+      "episodes": 50
+    }
+  ]
+}

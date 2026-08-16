@@ -66,3 +66,19 @@ episode; verification gate REQUIRES the hold-depth p90-p10 spread >= 10
 counts (v1/v2: ~0-5); retrain base 12k; eval n=50; funnel n=100. Runs
 automatically after the v2 pipeline UNLESS v2's base funnel already shows
 lift|seat >= 0.40. Primary readout unchanged: lift|seat vs the 16% baseline.
+
+## Round 2 verdict (recorded on arrival)
+
+base-v3: seat 81/100 (up from 61/63) but lift|seat 22% [0.15,0.32] -- FLAT on
+the ladder 16 -> 24 -> 22 -- and crushes worsened (31/50 at 120 N; deeper demo
+grips imitated). Depth diversity fixed seating, not commitment. Combined with
+the autopsy's stall-chunk finding (base's decoded plan at a stall is STATIC,
+median amplitude 6 counts), the conclusion: **base's commitment stall is
+representation-limited, not data-limited** -- two rounds of targeted data
+engineering failed to teach a channel-blind policy when to lift, while the
+delta input alone moved the same conditional to 47-56%. For this transition
+the channel is not an optimisation; it is the enabling input.
+
+Final matrix cell launched on the freed GPU: delta on demos_v3 (channel +
+kicks + depth diversity), the best-configured combination. Everything else
+identical to the other cells.
