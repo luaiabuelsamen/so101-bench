@@ -122,12 +122,21 @@ class DemoEnv:
         self.expert = ScriptedExpert(self.scene, expert)
         self.recorder = FrameRecorder(self.cameras, stride=stride)
 
-    def rollout(self, record: bool = True) -> tuple[EpisodeResult, FrameRecorder]:
-        """Run one scripted episode."""
+    def rollout(
+        self, record: bool = True, hook=None
+    ) -> tuple[EpisodeResult, FrameRecorder]:
+        """Run one scripted episode.
+
+        ``hook(scene)`` is called every control frame and MAY perturb the
+        simulator state -- this is the injection point for disturbance
+        (recovery-data) collection: kicking the physics leaves the recorded
+        actions as clean supervision while the states show deviations and the
+        expert's closed-loop corrections.
+        """
         self.recorder.reset()
         self.scene.recorder = self.recorder if record else None
         try:
-            result = self.expert.run()
+            result = self.expert.run(hook=hook)
         finally:
             self.scene.recorder = None
         return result, self.recorder
@@ -146,6 +155,7 @@ class DemoEnv:
         overwrite: bool = True,
         max_attempts: int | None = None,
         repo_id: str = "so101_bench/pick_place",
+        hook=None,
     ) -> CollectionReport:
         """Write ``episodes`` demonstrations as a LeRobotDataset.
 
@@ -180,7 +190,7 @@ class DemoEnv:
             if max_attempts is not None and attempted >= max_attempts:
                 log.warning("stopping after %d attempts with %d kept", attempted, kept)
                 break
-            result, frames = self.rollout()
+            result, frames = self.rollout(hook=hook)
             attempted += 1
             if only_success and not result.placed:
                 continue
