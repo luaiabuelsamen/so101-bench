@@ -489,3 +489,55 @@ grasp-ready precision adversarially); the jaw has been stationary >= 0.13 s;
 transport follows the 3.7 s tier; width 7.6-9.5 mm; load 4-78 N; against a
 +-9.2 N worst-case global-fit budget. Anything faster, unseated, or wider is
 outside the claim.
+
+## Phase 2: the physical safe-grip window (no feedback)
+
+Pre-declared protocol (`scripts/phase2_window.py`): 8.5 mm block, oracle used
+only to SET the seated force, jaw then frozen, the validated 3.7 s trajectory
+plus a 1 s hold as the fixed disturbance, retention = block displacement in
+the tool frame under 5 mm, 5 reps per level with +-2 mm pose jitter, a level
+passes at >= 4/5. Configuration v1, unchanged since characterisation.
+
+| seated force | retained | worst slip |
+|---|---|---|
+| 36 N | 5/5 | 0.28 mm |
+| 28 N | 5/5 | 0.49 mm |
+| **20 N** | **5/5** | 3.85 mm |
+| 14 N | 1/5 | 78 mm |
+| 10 N | 1/5 | 77 mm |
+| 7 N and below | 0/5 | ~85-95 mm |
+
+**F_min = 20 N**, with a sharp boundary between 14 and 20 N. As stated in
+advance, this sits nearly two orders of magnitude above the ~0.25 N static
+friction prediction: retention under this protocol is governed by the 8 N
+transport force excursion and torque about the 1 mm pinch line, not by static
+friction against gravity.
+
+The windows against candidate crush levels, versus the >= 20 N acceptance gate
+(twice the 9.2 N worst-case estimation budget):
+
+| crush candidate | W = crush - F_min | usable with global calibration |
+|---|---|---|
+| 60 N | 40 N | yes |
+| 80 N | 60 N | yes |
+| 100 N | 80 N | yes |
+| 120 N | 100 N | yes |
+
+Every candidate clears the gate; the task is physically feasible as built and
+no mechanical redesign (which would be configuration v2, requiring full
+re-characterisation) is needed.
+
+## The claim, final form
+
+**Servo tracking error supports seated, quasi-static, crush-aware gripping
+within a validated operating envelope** -- seating stall-detected (recall 1.00,
+grasp-ready precision 0.78 against adversarial jams), jaw stationary >= 0.13 s,
+the 3.7 s transport tier, widths 7.6-9.5 mm, loads 4-78 N, +-9.2 N worst-case
+estimation budget, and a measured safe-grip window of 40-100 N for crush
+thresholds 60-120 N.
+
+Nothing broader is supported: delta is not a general force sensor (it is
+non-informative while the object slides, and unusable during fast transport,
+where the true grip force itself swings 0-63 N with a frozen jaw). The
+clamp/delta/oracle comparison is now interpretable under this protocol and is
+the next authorised step.

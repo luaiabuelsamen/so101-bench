@@ -1,0 +1,75 @@
+{
+  "levels": [
+    {
+      "target_n": 36.0,
+      "kept": 5,
+      "reps": 5,
+      "passed": true,
+      "achieved_n": 37.26124208628904,
+      "worst_slip_mm": 0.2781735504321536
+    },
+    {
+      "target_n": 28.0,
+      "kept": 5,
+      "reps": 5,
+      "passed": true,
+      "achieved_n": 27.049424812010123,
+      "worst_slip_mm": 0.4900510408298326
+    },
+    {
+      "target_n": 20.0,
+      "kept": 5,
+      "reps": 5,
+      "passed": true,
+      "achieved_n": 19.399322033076373,
+      "worst_slip_mm": 3.8468158408982895
+    },
+    {
+      "target_n": 14.0,
+      "kept": 1,
+      "reps": 5,
+      "passed": false,
+      "achieved_n": 10.82133498455014,
+      "worst_slip_mm": 78.15767416533016
+    },
+    {
+      "target_n": 10.0,
+      "kept": 1,
+      "reps": 5,
+      "passed": false,
+      "achieved_n": 10.44551504931449,
+      "worst_slip_mm": 76.60209430122256
+    },
+    {
+      "target_n": 7.0,
+      "kept": 0,
+      "reps": 5,
+      "passed": false,
+      "achieved_n": 6.846403030756352,
+      "worst_slip_mm": 87.67117184655704
+    },
+    {
+      "target_n": 5.0,
+      "kept": 0,
+      "reps": 5,
+      "passed": false,
+      "achieved_n": 5.929857989229847,
+      "worst_slip_mm": 95.00106085101787
+    },
+    {
+      "target_n": 3.5,
+      "kept": 0,
+      "reps": 5,
+      "passed": false,
+      "achieved_n": 4.056107598298894,
+      "worst_slip_mm": 84.88012533343274
+    }
+  ],
+  "f_min_n": 20.0,
+  "windows": {
+    "60.0": 40.0,
+    "80.0": 60.0,
+    "100.0": 80.0,
+    "120.0": 100.0
+  }
+}
