@@ -1,0 +1,392 @@
+[
+  {
+    "crush_n": null,
+    "grip_mode": "clamp",
+    "setpoint": -0.2,
+    "episodes": 20,
+    "picked": 15,
+    "placed": 15,
+    "crushed": 0,
+    "peak_grip_median_n": 354.92079619920435
+  },
+  {
+    "crush_n": null,
+    "grip_mode": "clamp",
+    "setpoint": -0.1,
+    "episodes": 20,
+    "picked": 15,
+    "placed": 15,
+    "crushed": 0,
+    "peak_grip_median_n": 214.10826302081188
+  },
+  {
+    "crush_n": null,
+    "grip_mode": "clamp",
+    "setpoint": -0.05,
+    "episodes": 20,
+    "picked": 15,
+    "placed": 15,
+    "crushed": 0,
+    "peak_grip_median_n": 175.31850479109136
+  },
+  {
+    "crush_n": null,
+    "grip_mode": "clamp",
+    "setpoint": 0.0,
+    "episodes": 20,
+    "picked": 14,
+    "placed": 12,
+    "crushed": 0,
+    "peak_grip_median_n": 118.96469270435851
+  },
+  {
+    "crush_n": null,
+    "grip_mode": "clamp",
+    "setpoint": 0.03,
+    "episodes": 20,
+    "picked": 10,
+    "placed": 4,
+    "crushed": 0,
+    "peak_grip_median_n": 41.232493860089264
+  },
+  {
+    "crush_n": null,
+    "grip_mode": "force",
+    "setpoint": 10.0,
+    "episodes": 20,
+    "picked": 12,
+    "placed": 8,
+    "crushed": 0,
+    "peak_grip_median_n": 54.83860428811455
+  },
+  {
+    "crush_n": null,
+    "grip_mode": "force",
+    "setpoint": 20.0,
+    "episodes": 20,
+    "picked": 15,
+    "placed": 12,
+    "crushed": 0,
+    "peak_grip_median_n": 77.09864791019118
+  },
+  {
+    "crush_n": null,
+    "grip_mode": "force",
+    "setpoint": 30.0,
+    "episodes": 20,
+    "picked": 15,
+    "placed": 13,
+    "crushed": 0,
+    "peak_grip_median_n": 90.83634641472017
+  },
+  {
+    "crush_n": null,
+    "grip_mode": "force",
+    "setpoint": 45.0,
+    "episodes": 20,
+    "picked": 15,
+    "placed": 15,
+    "crushed": 0,
+    "peak_grip_median_n": 118.79194422921486
+  },
+  {
+    "crush_n": null,
+    "grip_mode": "oracle",
+    "setpoint": 25.0,
+    "episodes": 20,
+    "picked": 11,
+    "placed": 8,
+    "crushed": 0,
+    "peak_grip_median_n": 57.13023702023639
+  },
+  {
+    "crush_n": null,
+    "grip_mode": "oracle",
+    "setpoint": 45.0,
+    "episodes": 20,
+    "picked": 14,
+    "placed": 12,
+    "crushed": 0,
+    "peak_grip_median_n": 74.00845526624462
+  },
+  {
+    "crush_n": null,
+    "grip_mode": "oracle",
+    "setpoint": 70.0,
+    "episodes": 20,
+    "picked": 15,
+    "placed": 14,
+    "crushed": 0,
+    "peak_grip_median_n": 92.72993289437832
+  },
+  {
+    "crush_n": null,
+    "grip_mode": "oracle",
+    "setpoint": 100.0,
+    "episodes": 20,
+    "picked": 15,
+    "placed": 15,
+    "crushed": 0,
+    "peak_grip_median_n": 114.81440550969307
+  },
+  {
+    "crush_n": 120.0,
+    "grip_mode": "clamp",
+    "setpoint": -0.2,
+    "episodes": 20,
+    "picked": 15,
+    "placed": 0,
+    "crushed": 17,
+    "peak_grip_median_n": 354.92079619920435
+  },
+  {
+    "crush_n": 120.0,
+    "grip_mode": "clamp",
+    "setpoint": -0.1,
+    "episodes": 20,
+    "picked": 15,
+    "placed": 0,
+    "crushed": 17,
+    "peak_grip_median_n": 214.10826302081188
+  },
+  {
+    "crush_n": 120.0,
+    "grip_mode": "clamp",
+    "setpoint": -0.05,
+    "episodes": 20,
+    "picked": 15,
+    "placed": 0,
+    "crushed": 17,
+    "peak_grip_median_n": 175.31850479109136
+  },
+  {
+    "crush_n": 120.0,
+    "grip_mode": "clamp",
+    "setpoint": 0.0,
+    "episodes": 20,
+    "picked": 14,
+    "placed": 4,
+    "crushed": 9,
+    "peak_grip_median_n": 118.96469270435851
+  },
+  {
+    "crush_n": 120.0,
+    "grip_mode": "clamp",
+    "setpoint": 0.03,
+    "episodes": 20,
+    "picked": 10,
+    "placed": 4,
+    "crushed": 0,
+    "peak_grip_median_n": 41.232493860089264
+  },
+  {
+    "crush_n": 120.0,
+    "grip_mode": "force",
+    "setpoint": 10.0,
+    "episodes": 20,
+    "picked": 12,
+    "placed": 8,
+    "crushed": 1,
+    "peak_grip_median_n": 54.83860428811455
+  },
+  {
+    "crush_n": 120.0,
+    "grip_mode": "force",
+    "setpoint": 20.0,
+    "episodes": 20,
+    "picked": 15,
+    "placed": 10,
+    "crushed": 3,
+    "peak_grip_median_n": 77.09864791019118
+  },
+  {
+    "crush_n": 120.0,
+    "grip_mode": "force",
+    "setpoint": 30.0,
+    "episodes": 20,
+    "picked": 15,
+    "placed": 11,
+    "crushed": 3,
+    "peak_grip_median_n": 90.83634641472017
+  },
+  {
+    "crush_n": 120.0,
+    "grip_mode": "force",
+    "setpoint": 45.0,
+    "episodes": 20,
+    "picked": 15,
+    "placed": 7,
+    "crushed": 9,
+    "peak_grip_median_n": 118.79194422921486
+  },
+  {
+    "crush_n": 120.0,
+    "grip_mode": "oracle",
+    "setpoint": 25.0,
+    "episodes": 20,
+    "picked": 11,
+    "placed": 8,
+    "crushed": 0,
+    "peak_grip_median_n": 57.13023702023639
+  },
+  {
+    "crush_n": 120.0,
+    "grip_mode": "oracle",
+    "setpoint": 45.0,
+    "episodes": 20,
+    "picked": 14,
+    "placed": 11,
+    "crushed": 1,
+    "peak_grip_median_n": 74.00845526624462
+  },
+  {
+    "crush_n": 120.0,
+    "grip_mode": "oracle",
+    "setpoint": 70.0,
+    "episodes": 20,
+    "picked": 15,
+    "placed": 11,
+    "crushed": 3,
+    "peak_grip_median_n": 92.72993289437832
+  },
+  {
+    "crush_n": 120.0,
+    "grip_mode": "oracle",
+    "setpoint": 100.0,
+    "episodes": 20,
+    "picked": 15,
+    "placed": 7,
+    "crushed": 9,
+    "peak_grip_median_n": 114.81440550969307
+  },
+  {
+    "crush_n": 100.0,
+    "grip_mode": "clamp",
+    "setpoint": -0.2,
+    "episodes": 20,
+    "picked": 15,
+    "placed": 0,
+    "crushed": 17,
+    "peak_grip_median_n": 354.92079619920435
+  },
+  {
+    "crush_n": 100.0,
+    "grip_mode": "clamp",
+    "setpoint": -0.1,
+    "episodes": 20,
+    "picked": 15,
+    "placed": 0,
+    "crushed": 17,
+    "peak_grip_median_n": 214.10826302081188
+  },
+  {
+    "crush_n": 100.0,
+    "grip_mode": "clamp",
+    "setpoint": -0.05,
+    "episodes": 20,
+    "picked": 15,
+    "placed": 0,
+    "crushed": 17,
+    "peak_grip_median_n": 175.31850479109136
+  },
+  {
+    "crush_n": 100.0,
+    "grip_mode": "clamp",
+    "setpoint": 0.0,
+    "episodes": 20,
+    "picked": 14,
+    "placed": 1,
+    "crushed": 13,
+    "peak_grip_median_n": 118.96469270435851
+  },
+  {
+    "crush_n": 100.0,
+    "grip_mode": "clamp",
+    "setpoint": 0.03,
+    "episodes": 20,
+    "picked": 10,
+    "placed": 4,
+    "crushed": 0,
+    "peak_grip_median_n": 41.232493860089264
+  },
+  {
+    "crush_n": 100.0,
+    "grip_mode": "force",
+    "setpoint": 10.0,
+    "episodes": 20,
+    "picked": 12,
+    "placed": 8,
+    "crushed": 1,
+    "peak_grip_median_n": 54.83860428811455
+  },
+  {
+    "crush_n": 100.0,
+    "grip_mode": "force",
+    "setpoint": 20.0,
+    "episodes": 20,
+    "picked": 15,
+    "placed": 8,
+    "crushed": 5,
+    "peak_grip_median_n": 77.09864791019118
+  },
+  {
+    "crush_n": 100.0,
+    "grip_mode": "force",
+    "setpoint": 30.0,
+    "episodes": 20,
+    "picked": 15,
+    "placed": 8,
+    "crushed": 7,
+    "peak_grip_median_n": 90.83634641472017
+  },
+  {
+    "crush_n": 100.0,
+    "grip_mode": "force",
+    "setpoint": 45.0,
+    "episodes": 20,
+    "picked": 15,
+    "placed": 3,
+    "crushed": 15,
+    "peak_grip_median_n": 118.79194422921486
+  },
+  {
+    "crush_n": 100.0,
+    "grip_mode": "oracle",
+    "setpoint": 25.0,
+    "episodes": 20,
+    "picked": 11,
+    "placed": 7,
+    "crushed": 2,
+    "peak_grip_median_n": 57.13023702023639
+  },
+  {
+    "crush_n": 100.0,
+    "grip_mode": "oracle",
+    "setpoint": 45.0,
+    "episodes": 20,
+    "picked": 14,
+    "placed": 9,
+    "crushed": 4,
+    "peak_grip_median_n": 74.00845526624462
+  },
+  {
+    "crush_n": 100.0,
+    "grip_mode": "oracle",
+    "setpoint": 70.0,
+    "episodes": 20,
+    "picked": 15,
+    "placed": 7,
+    "crushed": 7,
+    "peak_grip_median_n": 92.72993289437832
+  },
+  {
+    "crush_n": 100.0,
+    "grip_mode": "oracle",
+    "setpoint": 100.0,
+    "episodes": 20,
+    "picked": 15,
+    "placed": 0,
+    "crushed": 18,
+    "peak_grip_median_n": 114.81440550969307
+  }
+]

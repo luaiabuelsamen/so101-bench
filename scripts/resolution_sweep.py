@@ -39,10 +39,20 @@ NEWTONS_PER_COUNT = 2.4
 TYPICAL_PEAK_N = 91.0
 
 
+#: Grip setpoints. ``force`` regulates the quantised tracking error to this many
+#: counts (~45 N at 2.4 N/count); ``oracle`` regulates the true force to the same
+#: nominal grip, so the two controllers aim at the same physical target and
+#: differ only in what they are able to measure.
+FORCE_SETPOINT_COUNTS = 20.0
+ORACLE_SETPOINT_N = 45.0
+
+
 def cell(crush: float | None, quantum: float, mode: str, episodes: int, seed: int) -> dict:
-    kwargs = {"grip_overshoot_counts": 4} if mode == "force" else {}
-    if mode == "oracle":
-        kwargs = {"grip_target_newtons": 15}
+    kwargs: dict[str, float] = {}
+    if mode == "force":
+        kwargs = {"grip_target_counts": FORCE_SETPOINT_COUNTS}
+    elif mode == "oracle":
+        kwargs = {"grip_target_newtons": ORACLE_SETPOINT_N}
     env = DemoEnv(
         seed=seed,
         cameras=(),

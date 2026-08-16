@@ -175,6 +175,36 @@ class PickScene:
             "block_friction": m.geom_friction[self.ids.block_geom].copy(),
         }
         self.substeps = int(round((1.0 / _CONTROL_HZ) / m.opt.timestep))
+        self.open_gap_local = self._measure_open_gap()
+
+    def _measure_open_gap(self) -> np.ndarray:
+        """Midpoint of the jaw pads AT JAW_OPEN, in ``Fixed_Jaw`` coordinates.
+
+        Distinct from ``TCP_LOCAL`` by 12.1 mm along the closing axis, and the
+        difference is not pedantry. ``TCP_LOCAL`` was recovered from
+        demonstrations as the block's position at the moment of lift -- that is,
+        after the moving jaw has swept it against the FIXED jaw. Descending with
+        that point aimed at the block therefore parks the block against the
+        fixed pad's side while the jaws are still open: traced, the descent
+        alone ramped the pad contact from 0 to 44 N before any close began, and
+        no grip controller can remove force that the arm itself is applying.
+        The descent must target the point midway between the OPEN pads; the
+        close then sweeps the block to ``TCP_LOCAL`` where the demos say it
+        belongs.
+        """
+        d = self.data
+        saved = d.qpos.copy()
+        mujoco.mj_resetDataKeyframe(self.model, d, self.model.key("home").id)
+        d.qpos[5] = JAW_OPEN
+        mujoco.mj_kinematics(self.model, d)
+        R = d.xmat[self.ids.jaw].reshape(3, 3)
+        origin = d.xpos[self.ids.jaw].copy()
+        fixed = d.geom_xpos[self.model.geom("fixed_jaw_pad_3").id]
+        moving = d.geom_xpos[self.model.geom("moving_jaw_pad_3").id]
+        out = R.T @ (0.5 * (fixed + moving) - origin)
+        d.qpos[:] = saved
+        mujoco.mj_forward(self.model, d)
+        return out
 
     # ------------------------------------------------------------------ scene
 
@@ -285,13 +315,17 @@ class PickScene:
         R = self.data.xmat[self.ids.jaw].reshape(3, 3)
         return self.data.xpos[self.ids.jaw] + R @ TCP_LOCAL
 
-    def tcp_at(self, q: np.ndarray) -> np.ndarray:
+    def tcp_at(self, q: np.ndarray, tool_local: np.ndarray | None = None) -> np.ndarray:
         """Tool position for arm configuration ``q``, leaving the state intact."""
         d = self.data
         saved = d.qpos.copy()
         d.qpos[:5] = q
         mujoco.mj_kinematics(self.model, d)
-        out = self.tcp()
+        if tool_local is None:
+            out = self.tcp()
+        else:
+            R = d.xmat[self.ids.jaw].reshape(3, 3)
+            out = d.xpos[self.ids.jaw] + R @ tool_local
         d.qpos[:] = saved
         mujoco.mj_kinematics(self.model, d)
         return out
@@ -304,6 +338,7 @@ class PickScene:
         iters: int = 150,
         damping: float = 0.05,
         tol: float = 1.2e-3,
+        tool_local: np.ndarray | None = None,
     ) -> tuple[np.ndarray, bool]:
         """Damped least squares placing the tool on ``target``, jaws level.
 
@@ -318,6 +353,7 @@ class PickScene:
             the arm can *track* the solution; check contacts for that.
         """
         m, d = self.model, self.data
+        tool = TCP_LOCAL if tool_local is None else np.asarray(tool_local, float)
         q = np.asarray(q0, dtype=float).copy()
         saved = d.qpos.copy()
         lo, hi = m.jnt_range[:5, 0], m.jnt_range[:5, 1]
@@ -330,7 +366,7 @@ class PickScene:
             mujoco.mj_kinematics(m, d)
             mujoco.mj_comPos(m, d)
             R = d.xmat[self.ids.jaw].reshape(3, 3)
-            pos = d.xpos[self.ids.jaw] + R @ TCP_LOCAL
+            pos = d.xpos[self.ids.jaw] + R @ tool
 
             err_pos = target - pos
             err_rot = np.cross(R[:, 1], up)

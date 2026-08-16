@@ -287,3 +287,58 @@ The dominant error is therefore ~15x the quantisation step, which is why the
 resolution effect only appears once the quantum is coarsened well past 1 count.
 A finer approach near contact would tighten the entry distribution and move the
 whole family of cliffs toward finer quanta.
+
+## Phase 1: what the tracking-error signal actually measures
+
+An external audit correctly stopped the controller tournament: task success
+rates cannot establish what a signal measures, and the claim was drifting
+between "delta is a force sensor" and "delta-feedback helps control". The claim
+is now frozen as the narrower one -- **servo tracking error is a useful
+low-cost feedback signal for crush-aware gripping in a bounded operating
+regime** -- and the boundary of that regime is measured, not asserted
+(`scripts/characterize_delta.py`, oracle force as ground truth, no task in the
+loop).
+
+### The signal has two regimes, and only one of them is a sensor
+
+**Sliding (before the object is seated against the fixed jaw).** This gripper
+actuates one jaw, so closing first slides the object across the table. Force
+stays at friction level (0-4 N) regardless of jaw travel, and a calibration
+staircase started at first touch returns garbage: slopes from -1.8 to +1.0
+N/count across cells. Delta carries no grip-force information here.
+
+**Seated.** Once the object is pinched against the fixed pad, the same
+staircase gives, across 20 cells spanning object widths, lateral offsets and
+step sizes:
+
+| quantity | value |
+|---|---|
+| slope | 1.75 - 2.21 N/count, median 2.13 (1.3x spread) |
+| pooled linear fit | **2.00 N/count** |
+| held-out RMSE (unseen widths) | **4.3 N** over a 4-78 N range (~6% FS) |
+| hysteresis (load vs unload) | 0.6 - 4.6 N, typically ~1.3 N |
+
+### The failure envelope
+
+* **Motion.** With an EMPTY jaw, arm transport alone drives delta to
+  p95 = 17 counts, max = 54 counts on fast (1 s) moves -- the same magnitude
+  as a firm grip -- collapsing to ~2 counts on slow moves. Any force reading
+  taken during fast motion is meaningless without compensation. This bounds
+  the operating regime to quasi-static reads.
+* **Onset ordering.** Where the object can slide, delta responds 20-90 frames
+  *before* the instantaneous normal force crosses 0.5 N, because it integrates
+  the friction load on the servo while the contact force flickers. Where the
+  object cannot slide, delta trails force onset by 0-4 frames (~0-130 ms).
+  Delta is an interaction detector before it is a force gauge.
+* **Seating is a precondition.** The mapping above exists only in the seated
+  regime, so any consumer of the signal must establish seating first -- which
+  the stall detector does from the same channel.
+
+### Why the tournament thrashed, in one sentence
+
+Six controller bugs were each real, but all of them -- entry spikes, overshoot,
+transport peaks, relief runaway -- were downstream of one unmeasured fact: the
+pinch is nearly rigid (~2 N per encoder count against a 100 N crush budget
+gives a 50-count window, but transients traverse it in single frames at any
+commanded speed above a creep). Characterise the plant first; the audit was
+right that no amount of task-level iteration substitutes for it.
