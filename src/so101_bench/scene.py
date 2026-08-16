@@ -122,6 +122,8 @@ class PickScene:
         obs_quantum: scales the *observation* quantum only; ``0.25`` models an
             encoder four times finer. This is the resolution knob for force
             ablations.
+        crush_newtons: grip force above which the block is destroyed and the
+            episode is lost. ``None`` keeps the block rigid.
     """
 
     def __init__(
@@ -133,6 +135,7 @@ class PickScene:
         height: int = 360,
         quantise: bool = True,
         obs_quantum: float = 1.0,
+        crush_newtons: float | None = None,
     ) -> None:
         if isinstance(randomise, bool):
             randomise = DomainRandomization() if randomise else DomainRandomization.off()
@@ -143,6 +146,11 @@ class PickScene:
         self.rng = np.random.default_rng(seed)
         self.quantise = quantise
         self.obs_quantum = obs_quantum
+        #: Grip force above which the block counts as destroyed. ``None`` leaves
+        #: the block rigid, which is the force-insensitive control condition.
+        self.crush_newtons = crush_newtons
+        self.crushed = False
+        self.peak_grip_n = 0.0
         self.last_action = np.zeros(self.model.nu)
         self.recorder = None
 
@@ -201,6 +209,8 @@ class PickScene:
         d.qpos[a : a + 3] = [block_xy[0], block_xy[1], TABLE_TOP + half_height + 0.001]
         d.qpos[a + 3 : a + 7] = [np.cos(block_yaw / 2), 0.0, 0.0, np.sin(block_yaw / 2)]
         d.qvel[:] = 0.0
+        self.crushed = False
+        self.peak_grip_n = 0.0
         mujoco.mj_forward(m, d)
         return self.block_pos()
 
@@ -245,6 +255,28 @@ class PickScene:
             and abs(block[1] - box[1]) < 0.055
             and block[2] < box[2] + 0.06
         )
+
+    # ------------------------------------------------------------- fragility
+
+    def update_crush(self) -> bool:
+        """Latch whether the block has ever been gripped past ``crush_newtons``.
+
+        This is what turns pick-and-place into a task that *needs* force. A rigid
+        block tolerates any grip -- measured, an open-loop clamp at 301 N places
+        as reliably as a 37 N regulated grip -- so nothing about the task rewards
+        controlling the squeeze. A crush limit supplies the missing upper bound:
+        below the limit the object may still slip, above it the episode is lost.
+        Success then requires landing inside a *window*, and the width of that
+        window in encoder counts is what the channel's resolution has to resolve.
+
+        The limit is read from the simulator's contact solver, never observed.
+        Call once per control frame; :meth:`hold` does this automatically.
+        """
+        force = self.grip_force()
+        self.peak_grip_n = max(self.peak_grip_n, force)
+        if self.crush_newtons is not None and force > self.crush_newtons:
+            self.crushed = True
+        return self.crushed
 
     # ------------------------------------------------------------- kinematics
 
@@ -343,6 +375,7 @@ class PickScene:
             self.data.ctrl[:] = c
             for _ in range(self.substeps):
                 mujoco.mj_step(self.model, self.data)
+            self.update_crush()
             if hook is not None:
                 hook(self)
 

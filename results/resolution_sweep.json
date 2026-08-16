@@ -1,0 +1,212 @@
+[
+  {
+    "crush_n": 100.0,
+    "obs_quantum": 1.0,
+    "grip_mode": "force",
+    "episodes": 30,
+    "picked": 24,
+    "placed": 11,
+    "crushed": 12,
+    "peak_grip_median_n": 90.91762428686184
+  },
+  {
+    "crush_n": 100.0,
+    "obs_quantum": 4.0,
+    "grip_mode": "force",
+    "episodes": 30,
+    "picked": 24,
+    "placed": 11,
+    "crushed": 12,
+    "peak_grip_median_n": 91.87377265319208
+  },
+  {
+    "crush_n": 100.0,
+    "obs_quantum": 8.0,
+    "grip_mode": "force",
+    "episodes": 30,
+    "picked": 24,
+    "placed": 9,
+    "crushed": 16,
+    "peak_grip_median_n": 101.35505513427591
+  },
+  {
+    "crush_n": 100.0,
+    "obs_quantum": 16.0,
+    "grip_mode": "force",
+    "episodes": 30,
+    "picked": 24,
+    "placed": 1,
+    "crushed": 24,
+    "peak_grip_median_n": 119.30093890321447
+  },
+  {
+    "crush_n": 100.0,
+    "obs_quantum": 32.0,
+    "grip_mode": "force",
+    "episodes": 30,
+    "picked": 24,
+    "placed": 0,
+    "crushed": 27,
+    "peak_grip_median_n": 152.6540420258102
+  },
+  {
+    "crush_n": 100.0,
+    "obs_quantum": 1.0,
+    "grip_mode": "clamp",
+    "episodes": 30,
+    "picked": 23,
+    "placed": 0,
+    "crushed": 26,
+    "peak_grip_median_n": 356.53097330606533
+  },
+  {
+    "crush_n": 100.0,
+    "obs_quantum": 1.0,
+    "grip_mode": "oracle",
+    "episodes": 30,
+    "picked": 22,
+    "placed": 12,
+    "crushed": 9,
+    "peak_grip_median_n": 84.91024819586369
+  },
+  {
+    "crush_n": 120.0,
+    "obs_quantum": 1.0,
+    "grip_mode": "force",
+    "episodes": 30,
+    "picked": 24,
+    "placed": 17,
+    "crushed": 6,
+    "peak_grip_median_n": 90.91762428686184
+  },
+  {
+    "crush_n": 120.0,
+    "obs_quantum": 4.0,
+    "grip_mode": "force",
+    "episodes": 30,
+    "picked": 24,
+    "placed": 17,
+    "crushed": 5,
+    "peak_grip_median_n": 91.87377265319208
+  },
+  {
+    "crush_n": 120.0,
+    "obs_quantum": 8.0,
+    "grip_mode": "force",
+    "episodes": 30,
+    "picked": 24,
+    "placed": 16,
+    "crushed": 8,
+    "peak_grip_median_n": 101.35505513427591
+  },
+  {
+    "crush_n": 120.0,
+    "obs_quantum": 16.0,
+    "grip_mode": "force",
+    "episodes": 30,
+    "picked": 24,
+    "placed": 10,
+    "crushed": 15,
+    "peak_grip_median_n": 119.30093890321447
+  },
+  {
+    "crush_n": 120.0,
+    "obs_quantum": 32.0,
+    "grip_mode": "force",
+    "episodes": 30,
+    "picked": 24,
+    "placed": 0,
+    "crushed": 25,
+    "peak_grip_median_n": 152.6540420258102
+  },
+  {
+    "crush_n": 120.0,
+    "obs_quantum": 1.0,
+    "grip_mode": "clamp",
+    "episodes": 30,
+    "picked": 23,
+    "placed": 0,
+    "crushed": 26,
+    "peak_grip_median_n": 356.53097330606533
+  },
+  {
+    "crush_n": 120.0,
+    "obs_quantum": 1.0,
+    "grip_mode": "oracle",
+    "episodes": 30,
+    "picked": 22,
+    "placed": 14,
+    "crushed": 6,
+    "peak_grip_median_n": 84.91024819586369
+  },
+  {
+    "crush_n": 160.0,
+    "obs_quantum": 1.0,
+    "grip_mode": "force",
+    "episodes": 30,
+    "picked": 24,
+    "placed": 20,
+    "crushed": 3,
+    "peak_grip_median_n": 90.91762428686184
+  },
+  {
+    "crush_n": 160.0,
+    "obs_quantum": 4.0,
+    "grip_mode": "force",
+    "episodes": 30,
+    "picked": 24,
+    "placed": 20,
+    "crushed": 2,
+    "peak_grip_median_n": 91.87377265319208
+  },
+  {
+    "crush_n": 160.0,
+    "obs_quantum": 8.0,
+    "grip_mode": "force",
+    "episodes": 30,
+    "picked": 24,
+    "placed": 19,
+    "crushed": 5,
+    "peak_grip_median_n": 101.35505513427591
+  },
+  {
+    "crush_n": 160.0,
+    "obs_quantum": 16.0,
+    "grip_mode": "force",
+    "episodes": 30,
+    "picked": 24,
+    "placed": 17,
+    "crushed": 7,
+    "peak_grip_median_n": 119.30093890321447
+  },
+  {
+    "crush_n": 160.0,
+    "obs_quantum": 32.0,
+    "grip_mode": "force",
+    "episodes": 30,
+    "picked": 24,
+    "placed": 11,
+    "crushed": 13,
+    "peak_grip_median_n": 152.6540420258102
+  },
+  {
+    "crush_n": 160.0,
+    "obs_quantum": 1.0,
+    "grip_mode": "clamp",
+    "episodes": 30,
+    "picked": 23,
+    "placed": 0,
+    "crushed": 26,
+    "peak_grip_median_n": 356.53097330606533
+  },
+  {
+    "crush_n": 160.0,
+    "obs_quantum": 1.0,
+    "grip_mode": "oracle",
+    "episodes": 30,
+    "picked": 22,
+    "placed": 17,
+    "crushed": 3,
+    "peak_grip_median_n": 84.91024819586369
+  }
+]

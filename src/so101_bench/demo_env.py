@@ -91,7 +91,8 @@ class DemoEnv:
         image_size: square render size in pixels.
         stride: record every ``stride``-th control frame.
         expert: expert configuration.
-        quantise, obs_quantum: see :class:`~so101_bench.scene.PickScene`.
+        quantise, obs_quantum, crush_newtons: see
+            :class:`~so101_bench.scene.PickScene`.
     """
 
     def __init__(
@@ -104,6 +105,7 @@ class DemoEnv:
         expert: ExpertConfig | None = None,
         quantise: bool = True,
         obs_quantum: float = 1.0,
+        crush_newtons: float | None = None,
     ) -> None:
         self.cameras = tuple(cameras)
         self.image_size = image_size
@@ -115,6 +117,7 @@ class DemoEnv:
             height=image_size,
             quantise=quantise,
             obs_quantum=obs_quantum,
+            crush_newtons=crush_newtons,
         )
         self.expert = ScriptedExpert(self.scene, expert)
         self.recorder = FrameRecorder(self.cameras, stride=stride)

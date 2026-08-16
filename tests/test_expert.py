@@ -96,3 +96,55 @@ def test_home_matches_the_scene_keyframe() -> None:
     scene = PickScene(seed=0, randomise=False)
     scene.reset()
     assert scene.model.key("home").ctrl[:5] == pytest.approx(HOME, abs=1e-4)
+
+
+def test_crush_limit_makes_force_feedback_necessary() -> None:
+    """The positive control: with a crush limit, the open-loop clamp must fail.
+
+    Rigid-block pick-and-place does not need force feedback (clamp 23/30 beats
+    both regulated experts). A crush limit inverts that -- the clamp's 356 N
+    median peak grip destroys the block every time, while the delta-regulated
+    grip survives. If this ever stops holding, the task has stopped being
+    force-sensitive and the resolution study built on it is meaningless.
+    """
+    clamp = DemoEnv(
+        seed=0, cameras=(), crush_newtons=120.0, expert=ExpertConfig(grip_mode="clamp")
+    ).evaluate(10)
+    force = DemoEnv(
+        seed=0,
+        cameras=(),
+        crush_newtons=120.0,
+        expert=ExpertConfig(grip_mode="force", grip_overshoot_counts=4),
+    ).evaluate(10)
+    assert sum(r.placed for r in clamp) == 0, "clamp should crush every block"
+    assert sum(r.crushed for r in clamp) >= 7
+    assert sum(r.placed for r in force) >= 3, "regulated grip should survive"
+
+
+def test_coarse_quantum_degrades_the_regulated_grip() -> None:
+    """Resolution must matter once the quantum exceeds the task's margin."""
+    fine = DemoEnv(
+        seed=0,
+        cameras=(),
+        crush_newtons=100.0,
+        obs_quantum=1.0,
+        expert=ExpertConfig(grip_mode="force", grip_overshoot_counts=4),
+    ).evaluate(12)
+    coarse = DemoEnv(
+        seed=0,
+        cameras=(),
+        crush_newtons=100.0,
+        obs_quantum=16.0,
+        expert=ExpertConfig(grip_mode="force", grip_overshoot_counts=4),
+    ).evaluate(12)
+    assert sum(r.placed for r in fine) > sum(r.placed for r in coarse)
+
+
+def test_crush_latch_clears_on_reset() -> None:
+    env = DemoEnv(seed=0, cameras=(), crush_newtons=50.0,
+                  expert=ExpertConfig(grip_mode="clamp"))
+    env.rollout(record=False)
+    assert env.scene.crushed
+    env.scene.reset()
+    assert not env.scene.crushed
+    assert env.scene.peak_grip_n == 0.0

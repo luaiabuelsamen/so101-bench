@@ -130,8 +130,41 @@ training anything.
 Force feedback buys nothing here, and costs a little: a gentler grip drops more
 often and nothing penalises crushing. This is the intended negative control —
 rigid-block pick-and-place is *not* a force-sensitive task, so it cannot be used
-to study force resolution. A task with a grip window (drop below it, crush above
-it) is required for that, and this result is why.
+to study force resolution.
+
+## The fragile task, and the resolution cliff
+
+`crush_newtons` loses the episode if grip force ever exceeds a limit, so success
+requires landing inside a *window* instead of squeezing as hard as possible.
+That inverts the control:
+
+| task | clamp | force (`delta`) | oracle (true N) |
+|---|---|---|---|
+| rigid block | **23/30** | 19/30 | 18/30 |
+| crush 120 N | **0/30** | **17/30** | 16/30 |
+
+The open-loop clamp goes from best to zero — a 356 N median grip destroys the
+block every time — while the quantised `delta` proxy substitutes fully for a
+real force sensor.
+
+Sweeping the observation quantum against the crush limit (`placed / 30`,
+`scripts/resolution_sweep.py`):
+
+| crush limit | q=1 | q=4 | q=8 | q=16 | q=32 | clamp | oracle |
+|---|---|---|---|---|---|---|---|
+| 100 N | 11 | 11 | 9 | **1** | 0 | 0 | 12 |
+| 120 N | 17 | 17 | 16 | 10 | **0** | 0 | 14 |
+| 160 N | 20 | 20 | 19 | 17 | **11** | 0 | 17 |
+
+Coarsening the channel destroys the task, as a cliff rather than a slope — and
+**the cliff moves with the margin**. An effect that appeared at every crush limit
+alike would just be the loss of input bits; this one tracks the physical
+headroom. At the real encoder's resolution the proxy matches the oracle.
+
+The quantitative prediction (`cliff ≈ margin / 2.4 N per count`) gets the
+ordering right and the constant wrong — off by 3.1x, 1.5x and 1.2x as the margin
+grows. See `docs/findings.md`; the limiting error at present is contact-detection
+latency (19–56 N of entry force), not the encoder.
 
 ## Provenance
 

@@ -13,6 +13,7 @@ each constant here.
 
 from __future__ import annotations
 
+from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Literal
@@ -86,6 +87,8 @@ class EpisodeResult:
     block_half_length: float = 0.0
     block_mass: float = 0.0
     block_friction: float = 0.0
+    crushed: bool = False
+    peak_grip_n: float = 0.0
 
 
 class _Waypoints:
@@ -162,17 +165,34 @@ class _Waypoints:
             ``(jaw_angle, contact_found)``.
         """
         scene = self.scene
-        previous = float(scene.data.qpos[5])
+        # Read the QUANTISED joint reading, not `data.qpos`. The raw simulator
+        # state is not available to a real robot, and using it here would make
+        # the expert immune to `obs_quantum` -- silently defeating the one
+        # ablation this environment exists to run.
+        #
+        # Motion is then integrated over a WINDOW rather than compared frame to
+        # frame, and the window widens with the quantum. At 0.006 rad the jaw
+        # advances 3.9 counts per frame, so a quantum of 8 counts makes most
+        # single-frame differences read zero and a frame-to-frame test would
+        # declare a stall immediately. That would manufacture the very effect
+        # this environment is meant to measure. Integrating until the expected
+        # travel is a small multiple of the quantum gives the detector the best
+        # it can do at each resolution, so whatever degradation survives is a
+        # property of the channel and not of a naive controller.
+        step_counts = step_rad / RAD_PER_TICK
+        window = max(3, int(np.ceil(2.0 * scene.obs_quantum / max(step_counts, 1e-9))))
+        history: deque[float] = deque(maxlen=window + 1)
+        history.append(float(scene.state_ticks()[5]))
         for k in range(max_frames):
             if self.jaw <= JAW_SHUT:
                 return self.jaw, False
             self.jaw = max(JAW_SHUT, self.jaw - step_rad)
             scene.hold(np.concatenate([self.q, [self.jaw]]), hook=self.hook)
-            actual = float(scene.data.qpos[5])
-            moved = abs(actual - previous)
-            previous = actual
-            if k >= warmup and moved < stall_fraction * step_rad:
-                return self.jaw, True
+            history.append(float(scene.state_ticks()[5]))
+            if k >= warmup and len(history) == window + 1:
+                moved = abs(history[-1] - history[0])
+                if moved < stall_fraction * window * step_counts:
+                    return self.jaw, True
         return self.jaw, False
 
     def grip_by_overshoot(
@@ -371,6 +391,9 @@ class ScriptedExpert:
         way.set_jaw(JAW_OPEN, frames=20)
         way.move(box + [0, 0, 0.18], frames=35)
 
-        result.placed = result.picked and scene.block_in_box()
+        # A crushed block is a lost episode however tidily it was delivered.
+        result.crushed = scene.crushed
+        result.peak_grip_n = scene.peak_grip_n
+        result.placed = result.picked and scene.block_in_box() and not scene.crushed
         result.peak_rise_m = peak
         return result

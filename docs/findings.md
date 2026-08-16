@@ -218,3 +218,72 @@ cannot be used to study force resolution, and now that is measured rather than
 assumed. A grip *window* — drop below it, crush above it — is required, and the
 `oracle` expert gives the upper bound against which any such task should be
 screened before spending training time on it.
+
+## A task that needs force, and a resolution cliff that moves with the margin
+
+The rigid-block task cannot test force resolution (previous section). Adding a
+**crush limit** — the episode is lost if grip force ever exceeds it — supplies
+the missing upper bound, so success requires landing inside a window rather than
+squeezing as hard as possible.
+
+That flips the negative control into a positive one. 30 episodes per cell:
+
+| task | clamp | force (`delta`) | oracle (true N) |
+|---|---|---|---|
+| rigid block | **23/30** | 19/30 | 18/30 |
+| crush 120 N | **0/30** | **17/30** | 16/30 |
+
+The open-loop clamp goes from best to *zero*: at a median peak grip of 356 N it
+destroys the block every time. The quantised `delta` proxy substitutes fully for
+a true force sensor.
+
+### Resolution
+
+Sweeping the observation quantum against the crush limit, force-regulated expert,
+`placed / 30`:
+
+| crush limit | q=1 | q=4 | q=8 | q=16 | q=32 | clamp | oracle |
+|---|---|---|---|---|---|---|---|
+| 100 N | 11 | 11 | 9 | **1** | 0 | 0 | 12 |
+| 120 N | 17 | 17 | 16 | 10 | **0** | 0 | 14 |
+| 160 N | 20 | 20 | 19 | 17 | **11** | 0 | 17 |
+
+Three things worth separating:
+
+1. **Coarsening the channel destroys the task**, and the collapse is a cliff
+   rather than a slope: flat from q=1 to q=8, then a fall.
+2. **The cliff moves with the margin.** At a 100 N limit, q=16 leaves 1/30; at
+   160 N the same quantum leaves 17/30. An effect that appeared at every crush
+   limit alike would be an artifact of removing input bits — this one tracks the
+   physical headroom, which is the signature of a genuine resolution limit.
+3. **At the real encoder's resolution (q=1) the proxy matches the oracle** —
+   11 vs 12, 17 vs 14, 20 vs 17. On this task the tracking-error channel is as
+   good as a force sensor, and the open-loop clamp is worthless.
+
+### Where the quantitative prediction stands
+
+Force changes by ~2.4 N per encoder count and typical peak grip is ~91 N, giving
+a predicted failure quantum of `(crush - 91) / 2.4`. Taking the cliff as the
+quantum where success halves:
+
+| crush | margin | predicted | observed |
+|---|---|---|---|
+| 100 N | 9 N | 3.8 | ~11.5 |
+| 120 N | 29 N | 12.1 | ~18.4 |
+| 160 N | 69 N | 28.8 | ~34 |
+
+Both rise monotonically and the gap narrows as the margin grows, so the
+mechanism is right, but the constant is not: the prediction is off by 3.1x, 1.5x
+and 1.2x. `TYPICAL_PEAK_N` is a single median stand-in for a distribution that
+actually spans 19-56 N at contact alone, which is the obvious suspect. The law
+should be re-derived from the peak-grip *distribution* before it is claimed as
+quantitative.
+
+### What actually limits the grip
+
+Contact detection, not the encoder. Entry force at the moment of detection is
+19-56 N with a median of 41 (n=28), while the encoder affords 2.4 N per count.
+The dominant error is therefore ~15x the quantisation step, which is why the
+resolution effect only appears once the quantum is coarsened well past 1 count.
+A finer approach near contact would tighten the entry distribution and move the
+whole family of cliffs toward finer quanta.
