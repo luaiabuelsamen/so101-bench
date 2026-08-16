@@ -43,38 +43,31 @@ vol = modal.Volume.from_name("so101-bench", create_if_missing=True)
 image = (
     modal.Image.debian_slim(python_version="3.10")
     .apt_install("libgl1", "libglib2.0-0", "libegl1", "libgles2")
-    .pip_install(
-        "torch",
-        "mujoco>=3.0",
-        "lerobot==0.3.4",
-        "numpy",
-        "pandas",
-        "pyarrow",
-    )
-    .env({"MUJOCO_GL": "egl"})
-    .add_local_dir("src", "/repo/src")
-    .add_local_dir("scripts", "/repo/scripts")
-    .add_local_file("pyproject.toml", "/repo/pyproject.toml")
+    .pip_install("torch", "mujoco>=3.0", "numpy", "pandas", "pyarrow")
+    .env({"MUJOCO_GL": "egl", "PYTHONPATH": "/repo/src"})
+    .add_local_dir("vendor/lerobot", "/lerobot_src", copy=True)
+    .run_commands("pip install '/lerobot_src[dataset]'")
+    .add_local_dir("src", "/repo/src", copy=True)
+    .add_local_dir("scripts", "/repo/scripts", copy=True)
+    .add_local_file("pyproject.toml", "/repo/pyproject.toml", copy=True)
 )
 
 
-@app.function(image=image, gpu=GPU, volumes={"/vol": vol}, timeout=4 * 3600)
-def train_one(arm: str, seed: int) -> str:
+@app.function(image=image, gpu=GPU, volumes={"/vol": vol}, timeout=6 * 3600)
+def train_one(arm: str, seed: int, steps: int = STEPS, eval_eps: int = 100) -> str:
     import subprocess
     import sys
 
-    subprocess.run([sys.executable, "-m", "pip", "install", "-e", "/repo", "-q"],
-                   check=True)
     cmd = [
         sys.executable, "/repo/scripts/train_act.py",
         "--arm", arm,
         "--seed", str(seed),
-        "--steps", str(STEPS),
+        "--steps", str(steps),
         "--batch", "64",                       # H100 headroom; lr unchanged
         "--image-size", str(IMAGE),
         "--root", "/vol/demos_v4",
         "--out", "/vol/outputs/checkpoints",
-        "--eval-episodes", "100",
+        "--eval-episodes", str(eval_eps),
         "--eval-crush", "-1", "120",
         "--json", f"/vol/outputs/act_{arm}_s{seed}.json",
     ]
@@ -87,8 +80,9 @@ def train_one(arm: str, seed: int) -> str:
 
 
 @app.local_entrypoint()
-def main(arms: str = "delta,base,base_hist", seeds: str = "0,1"):
-    jobs = [(a, int(s)) for a in arms.split(",") for s in seeds.split(",")]
+def main(arms: str = "delta,base,base_hist", seeds: str = "0,1",
+         steps: int = STEPS, eval_eps: int = 100):
+    jobs = [(a, int(s), steps, eval_eps) for a in arms.split(",") for s in seeds.split(",")]
     print(f"launching {len(jobs)} runs on {GPU}: {jobs}")
     for result in train_one.starmap(jobs, return_exceptions=True):
         print("=" * 60)
