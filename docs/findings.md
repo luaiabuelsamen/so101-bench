@@ -554,3 +554,60 @@ non-informative while the object slides, and unusable during fast transport,
 where the true grip force itself swings 0-63 N with a frozen jaw). The
 clamp/delta/oracle comparison is now interpretable under this protocol and is
 the next authorised step.
+
+## Final tournament: clamp matches all methods, and why that is the finding
+
+Frozen protocol (`scripts/tournament_final.py`): configuration v1, the 3.7 s
+tier, shared seating/closure/trajectory/timeouts, guard-banded targets
+F_target = (20 + F_max - 17.2)/2, delta and oracle with ZERO tuned parameters,
+clamp's one knob tuned on a 10-instance dev set (the tuning budget favoured
+the baseline), 30 paired held-out instances per threshold.
+
+| F_max | clamp | delta | oracle |
+|---|---|---|---|
+| 60 N | 29/30 [0.83,0.99] | 29/30 [0.83,0.99] | 26/30 [0.70,0.95] |
+| 80 N | 30/30 | 30/30 | 30/30 |
+| 100 N | 30/30 | 30/30 | 30/30 |
+| 120 N | 30/30 | 30/30 | 30/30 |
+
+Paired delta-vs-clamp: 118 of 120 instances TIED (1 win each at 60 N). No
+significant difference anywhere; all intervals overlap.
+
+Per the interpretation table frozen before the run, this is the "clamp matches
+all methods" row: **within the validated envelope and the measured windows
+(W >= 40 N), continuous force feedback provides no measured benefit over
+stall-seated clamping.** That is reported as the result, not retuned away.
+
+### Why, and what it actually says about the channel
+
+The audit-required shared seating logic changes what "clamp" means. Stall-based
+seating stops where the object is, so seat-then-2-counts lands at a
+width-independent ~30-39 N grip (p95 38.8 N across all widths) -- inside every
+window. The "no-feedback" baseline is therefore already using the
+proprioceptive channel, ONCE, as a discrete contact-detection event. The
+earlier dramatic clamp collapse (0/30, 356 N) was a clamp WITHOUT seating:
+what that experiment demonstrated was the value of stopping at the object, not
+of continuously regulating force against it.
+
+Restated: **on this task, inside this envelope, the value of the tracking-error
+channel is concentrated in the seating event, not in continuous force
+regulation.** This is consistent with every upstream measurement -- the corpus
+finding that deployed datasets carry ~1.5 distinguishable force levels (enough
+for contact/no-contact and little else), and the Phase 1 finding that delta is
+an interaction detector before it is a force gauge.
+
+Secondary observations, small numbers, none significant: oracle recorded 3
+crushes at F_max = 60 N (its true-force tracking chases transport transients
+near the tight target); delta at the higher targets held the firmest transport
+grip (min force 41-52 N where clamp and oracle both saw momentary contact
+loss); delta's in-transport estimation error was 3.5-5.5 N p95, consistent
+with the static budget.
+
+### The boundary of the null
+
+The guard-band formula empties as F_max approaches F_min + 17.2 = 37.2 N, so
+thresholds tight enough to separate the conditions (where a 4-9 N estimation
+error should start costing crushes) sit at F_max ~ 40-55 N -- mostly outside
+the interval the frozen protocol permits. Whether feedback matters THERE is a
+pre-registerable extension, not a rescue of this run: this run's answer stands
+as measured.
