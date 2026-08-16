@@ -523,14 +523,27 @@ The windows against candidate crush levels, versus the >= 20 N acceptance gate
 | 100 N | 80 N | yes |
 | 120 N | 100 N | yes |
 
-Every candidate clears the gate; the task is physically feasible as built and
-no mechanical redesign (which would be configuration v2, requiring full
-re-characterisation) is needed.
+Explicitly: F_min = 20 N; for F_max in {60, 80, 100, 120} N the window is
+W(F_max) = F_max - 20 N, i.e. {40, 60, 80, 100} N. Every candidate clears the
+gate; the task is physically feasible as built and no mechanical redesign
+(which would be configuration v2, requiring full re-characterisation) is
+needed.
+
+On the 3.85 mm slip at F_min: the retention criterion here is "retained"
+(tool-frame displacement < 5 mm), deliberately weaker than the dynamic-boundary
+protocol's < 1 mm slip criterion -- the boundary sweep certifies where the
+SENSOR reading stays valid, while this protocol measures where the GRASP
+physically survives. 20 N is therefore a retained-with-residual-slip floor,
+not a no-slip grasp; a no-slip floor under the same protocol would sit nearer
+28 N (0.49 mm).
 
 ## The claim, final form
 
-**Servo tracking error supports seated, quasi-static, crush-aware gripping
-within a validated operating envelope** -- seating stall-detected (recall 1.00,
+**Servo tracking error supports seated, low-dynamic, crush-aware gripping
+within a validated operating envelope** ("quasi-static" is reserved for the
+sensor-calibration and hold phases, where the jaw is stationary; the 3.7 s
+transport tier is validated bounded-dynamics transport, not a demonstrated
+quasi-static regime) -- seating stall-detected (recall 1.00,
 grasp-ready precision 0.78 against adversarial jams), jaw stationary >= 0.13 s,
 the 3.7 s transport tier, widths 7.6-9.5 mm, loads 4-78 N, +-9.2 N worst-case
 estimation budget, and a measured safe-grip window of 40-100 N for crush
