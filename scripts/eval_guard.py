@@ -1,0 +1,178 @@
+"""Guard-wrapper A/B: the same trained policy, raw vs wrapped, paired seeds.
+
+    python scripts/eval_guard.py --arms base delta delta_q16
+
+THE CLAIM UNDER TEST. The demonstrations carry the teacher's force profile
+(peak grip median 77 N), so a cloned policy should crush at tight thresholds
+no matter what its inputs are. The guard is ~30 lines of jaw-safety around ANY
+policy's actions, using only bus-observable signals and the constants
+validated in Phases 1b/1c:
+
+  * stall-based seating detection on the observed jaw channel (the frozen
+    detector: recall 1.00, grasp-ready precision 0.78 adversarially);
+  * once seated, the jaw command is floored at (seat - GUARD_COUNTS): the
+    policy may open or hold, but cannot command deeper than a bounded squeeze.
+
+No retraining, no object knowledge, no privileged state. If it converts
+crushes to successes on the identical checkpoint, that is the deployable
+result: wrap your existing SO-101 policy, stop crushing things.
+
+Same paired protocol as everything else: identical eval seeds raw vs guarded,
+Wilson CIs, per-tier crush/drop/success plus true-force statistics.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from collections import deque
+from pathlib import Path
+
+import numpy as np
+import torch
+
+sys.path.insert(0, str(Path(__file__).parent))
+
+from so101_bench import DemoEnv, ExpertConfig  # noqa: E402
+from so101_bench.scene import JAW_SHUT, RAD_PER_TICK  # noqa: E402
+
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+GUARD_COUNTS = 4.0          # deepest allowed squeeze past detected seat
+STALL_FRACTION = 0.3
+STALL_WINDOW = 4            # frames of jaw history at the policy's 15 Hz rate
+CRUSH_TIERS = [-1.0, 120.0, 60.0]
+EPISODES = 30
+
+
+class JawGuard:
+    """Bus-observable jaw safety layer. Wraps action counts, returns counts."""
+
+    def __init__(self):
+        self.hist: deque[float] = deque(maxlen=STALL_WINDOW + 1)
+        self.seat_jaw: float | None = None
+        self.last_cmd: float | None = None
+
+    def __call__(self, jaw_meas_counts: float, jaw_cmd_counts: float) -> float:
+        self.hist.append(jaw_meas_counts)
+        closing = self.last_cmd is not None and jaw_cmd_counts < self.last_cmd - 0.5
+        if (
+            self.seat_jaw is None
+            and closing
+            and len(self.hist) == STALL_WINDOW + 1
+        ):
+            cmd_travel = abs(jaw_cmd_counts - self.last_cmd) * STALL_WINDOW
+            moved = abs(self.hist[-1] - self.hist[0])
+            if cmd_travel > 2.0 and moved < STALL_FRACTION * cmd_travel:
+                self.seat_jaw = jaw_meas_counts
+        self.last_cmd = jaw_cmd_counts
+        if self.seat_jaw is not None:
+            return max(jaw_cmd_counts, self.seat_jaw - GUARD_COUNTS)
+        return jaw_cmd_counts
+
+
+def load_policy(arm: str, root: str):
+    from lerobot.policies.act.modeling_act import ACTPolicy
+
+    return ACTPolicy.from_pretrained(Path(root) / arm).to(DEVICE)
+
+
+@torch.no_grad()
+def rollout(env, policy, arm: str, guarded: bool):
+    scene = env.scene
+    scene.reset()
+    policy.reset()
+    guard = JawGuard()
+    z0 = scene.block_pos()[2]
+    a_prev = None
+    peak_rise, peak_force = 0.0, 0.0
+    for _ in range(260):
+        s = torch.as_tensor(scene.state_ticks(), dtype=torch.float32)
+        if arm != "base":
+            d = (a_prev - s) if a_prev is not None else torch.zeros_like(s)
+            s_in = torch.cat([s, d])
+        else:
+            s_in = s
+        obs = {
+            "observation.state": s_in.unsqueeze(0).to(DEVICE),
+            "observation.images.front": torch.as_tensor(scene.image("front"))
+            .permute(2, 0, 1).float().div(255).unsqueeze(0).to(DEVICE),
+            "observation.images.gripper_fpv": torch.as_tensor(
+                scene.image("gripper_fpv")
+            ).permute(2, 0, 1).float().div(255).unsqueeze(0).to(DEVICE),
+        }
+        action = policy.select_action(obs).squeeze(0).cpu()
+        a_prev = action.clone()
+        cmd = action.numpy().astype(float)
+        if guarded:
+            cmd[5] = guard(float(scene.state_ticks()[5]), cmd[5])
+        cmd[5] = max(cmd[5], JAW_SHUT / RAD_PER_TICK)
+        scene.hold(cmd * RAD_PER_TICK, frames=2)
+        peak_rise = max(peak_rise, scene.block_pos()[2] - z0)
+        peak_force = max(peak_force, scene.grip_force())
+        if scene.crushed:
+            break
+    picked = peak_rise > 0.03
+    placed = picked and scene.block_in_box() and not scene.crushed
+    return dict(placed=placed, crushed=scene.crushed,
+                dropped=picked and not placed and not scene.crushed,
+                peak_force=peak_force)
+
+
+def wilson(k, n):
+    z, p = 1.96, k / n
+    d = 1 + z * z / n
+    c = (p + z * z / (2 * n)) / d
+    h = z * np.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d
+    return max(0.0, c - h), min(1.0, c + h)
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--arms", nargs="*", default=["base", "delta", "delta_q16"])
+    ap.add_argument("--ckpt", default="checkpoints/act")
+    ap.add_argument("--json", default="results/guard_ab.json")
+    args = ap.parse_args()
+
+    rows = []
+    print(f"{'arm':>10} {'crush':>6} {'mode':>8} {'success':>9} {'crushed':>8} "
+          f"{'dropped':>8} {'peakF med':>10}")
+    for arm in args.arms:
+        try:
+            policy = load_policy(arm, args.ckpt)
+        except Exception as e:
+            print(f"{arm}: checkpoint not found ({e})")
+            continue
+        policy.eval()
+        for crush in CRUSH_TIERS:
+            for guarded in (False, True):
+                env = DemoEnv(
+                    seed=2000, cameras=("front", "gripper_fpv"), image_size=96,
+                    stride=2,
+                    obs_quantum=16.0 if arm == "delta_q16" else 1.0,
+                    crush_newtons=None if crush <= 0 else crush,
+                    expert=ExpertConfig(),
+                )
+                outs = [rollout(env, policy, arm, guarded) for _ in range(EPISODES)]
+                env.close()
+                k = sum(o["placed"] for o in outs)
+                lo, hi = wilson(k, EPISODES)
+                pf = float(np.median([o["peak_force"] for o in outs]))
+                row = dict(arm=arm, crush=crush, guarded=guarded, success=k,
+                           episodes=EPISODES, ci=[lo, hi],
+                           crushed=sum(o["crushed"] for o in outs),
+                           dropped=sum(o["dropped"] for o in outs),
+                           peak_force_median=pf)
+                rows.append(row)
+                print(f"{arm:>10} {crush:6.0f} {'guard' if guarded else 'raw':>8} "
+                      f"{k:5d}/{EPISODES} {row['crushed']:8d} {row['dropped']:8d} "
+                      f"{pf:10.1f}", flush=True)
+
+    Path(args.json).parent.mkdir(exist_ok=True)
+    with open(args.json, "w") as fh:
+        json.dump(rows, fh, indent=2)
+    print(f"wrote {args.json}")
+
+
+if __name__ == "__main__":
+    main()
