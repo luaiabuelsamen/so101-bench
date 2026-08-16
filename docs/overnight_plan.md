@@ -31,3 +31,17 @@ is void and that is said aloud).
 - Kill only by PID file. n≥50 for any decision-bearing rate. Every new script
   smoke-tests before a long launch.
 - Negative results get written with the same care as positive ones.
+
+## Gate results (recorded as they landed, before training finished)
+
+- Funnels n=100: base dies at lift-commitment (seat 65%, lift|seat 16%);
+  delta dies earlier but commits (seat 38%, lift|seat 47%) -- the channel
+  relocates the failure mode up the ladder rather than scaling one number.
+- demos_v2 collection: 280/426 (66% yield, at the measured knee).
+- Coverage gate: **passed on the per-frame metric** -- RMS jerk doubled
+  (0.87 -> 1.64 m/s^3), proving deviated-state/corrective-action pairs are in
+  the data. Path-level PCA stayed 92%-in-2-PCs, which in hindsight it must:
+  resampled path shapes smooth out 100-200 ms recovery transients, and the
+  expert returns to its nominal path. The pre-registered "PCA must widen"
+  check named an instrument insensitive to the thing it was guarding; the
+  jerk metric is the valid instrument. Stated rather than silently swapped.
