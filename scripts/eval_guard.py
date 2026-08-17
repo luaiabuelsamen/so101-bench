@@ -48,6 +48,27 @@ STALL_WINDOW = 4            # frames of jaw history at the policy's 15 Hz rate
 #: unclamped guard latched phantom seats at open aperture (0/50, 0 N grip).
 #: Feasible travel is the correct denominator.
 MAX_SLEW_PER_FRAME = 13.0   # counts per policy step (2 control frames)
+#: Seating means the command NET-deepened across the whole window while the
+#: jaw failed to follow. Both phantom-seat modes seen on the scaled policy --
+#: (a) big single-step extrapolation, (b) sub-count closing jitter around a
+#: persistent equilibrium offset, where the deadband keeps the jaw static --
+#: cancel out in net terms: jitter nets to ~0 and fails NET_CLOSE_MIN; a real
+#: squeeze nets tens of counts the jaw doesn't track.
+NET_CLOSE_MIN = 8.0         # counts of net command deepening over the window
+GAP_MIN = 5.0               # meas-cmd gap that must be open at test time
+#: The H100 policy also CREEPS its close (~4 counts/step, cloned from the
+#: teacher's guarded move), and a creeping jaw tracks the command INTO the
+#: object -- no kinematic stall until deep in the squeeze. Contact shows up
+#: instead as gap in EXCESS of the rate-proportional following lag
+#: (gap ~= K_LAG * rate when free). K_LAG measured on 609 free-closing
+#: windows of this policy's traces (median 2.32, p90 2.97 steps); re-estimate
+#: from free motion when porting to hardware. Detector validated offline on
+#: 12 instrumented episodes: persist=3 gives 0 phantoms / 0 misses,
+#: force-at-seat median 37 N max 49 N vs raw peaks 90-156 N
+#: (scratchpad/guard_replay_test.py).
+K_LAG = 2.97                # steps of following lag per count/step of rate
+EXCESS_MIN = 6.0            # counts of gap beyond lag baseline = contact
+PERSIST = 3                 # consecutive qualifying steps before latching
 CRUSH_TIERS = [-1.0, 120.0, 60.0]
 EPISODES = 30
 
@@ -57,30 +78,29 @@ class JawGuard:
 
     def __init__(self):
         self.hist: deque[float] = deque(maxlen=STALL_WINDOW + 1)
+        self.cmd_hist: deque[float] = deque(maxlen=STALL_WINDOW + 1)
         self.seat_jaw: float | None = None
-        self.last_cmd: float | None = None
+        self.streak = 0
 
     def __call__(self, jaw_meas_counts: float, jaw_cmd_counts: float) -> float:
         self.hist.append(jaw_meas_counts)
-        closing = self.last_cmd is not None and jaw_cmd_counts < self.last_cmd - 0.5
-        if (
-            self.seat_jaw is None
-            and closing
-            and len(self.hist) == STALL_WINDOW + 1
-        ):
-            cmd_travel = abs(jaw_cmd_counts - self.last_cmd) * STALL_WINDOW
-            feasible = min(cmd_travel, MAX_SLEW_PER_FRAME * STALL_WINDOW)
-            moved = abs(self.hist[-1] - self.hist[0])
-            # gap gate: a stall means the servo is held away from where it is
-            # commanded. Without this, micro-closing commands (sub-count
-            # jitter with the jaw already at target) pass the feasible floor
-            # while the deadband keeps the jaw static, and the guard latched
-            # phantom seats in open air on the scaled 224px policy (0/30,
-            # 0.4 N) -- the second phantom-seat mode after the slew one.
+        self.cmd_hist.append(jaw_cmd_counts)
+        if self.seat_jaw is None and len(self.hist) == STALL_WINDOW + 1:
+            # net terms over the window, in closing-positive counts
+            net_close = self.cmd_hist[0] - self.cmd_hist[-1]
+            followed = self.hist[0] - self.hist[-1]
+            feasible = min(net_close, MAX_SLEW_PER_FRAME * STALL_WINDOW)
+            rate = max(net_close / STALL_WINDOW, 0.0)
             gap = jaw_meas_counts - jaw_cmd_counts     # meas above deeper cmd
-            if gap >= 3.0 and feasible > 4.0 and moved < STALL_FRACTION * feasible:
+            stall = (
+                net_close >= NET_CLOSE_MIN
+                and gap >= GAP_MIN
+                and followed < STALL_FRACTION * feasible
+            )
+            creep = rate > 0.5 and gap - K_LAG * rate >= EXCESS_MIN
+            self.streak = self.streak + 1 if (stall or creep) else 0
+            if self.streak >= PERSIST:
                 self.seat_jaw = jaw_meas_counts
-        self.last_cmd = jaw_cmd_counts
         if self.seat_jaw is not None:
             return max(jaw_cmd_counts, self.seat_jaw - GUARD_COUNTS)
         return jaw_cmd_counts
