@@ -1,0 +1,50 @@
+[
+  {
+    "crush": -1.0,
+    "guarded": false,
+    "success": 31,
+    "crushed": 0,
+    "dropped": 11,
+    "ci": [
+      0.482,
+      0.741
+    ],
+    "peak_force_median": 93.54606020183621
+  },
+  {
+    "crush": -1.0,
+    "guarded": true,
+    "success": 0,
+    "crushed": 0,
+    "dropped": 0,
+    "ci": [
+      0.0,
+      0.071
+    ],
+    "peak_force_median": 0.38023483440365297
+  },
+  {
+    "crush": 120.0,
+    "guarded": false,
+    "success": 19,
+    "crushed": 17,
+    "dropped": 7,
+    "ci": [
+      0.259,
+      0.518
+    ],
+    "peak_force_median": 89.45384012177914
+  },
+  {
+    "crush": 120.0,
+    "guarded": true,
+    "success": 0,
+    "crushed": 0,
+    "dropped": 0,
+    "ci": [
+      0.0,
+      0.071
+    ],
+    "peak_force_median": 0.37346580959146747
+  }
+]

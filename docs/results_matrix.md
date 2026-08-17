@@ -17,7 +17,7 @@ The two trends that ARE the result:
   without the channel)
 - **delta commitment climbs with every data improvement: 47 -> 56 -> 76%**, place
   5 -> 17 -> 21 -- the channel converts data engineering into task progress
-- causal seal: zeroing delta at a stall collapses the planned lift 14x (482 -> 35
+- causal evidence (small scale): zeroing delta at a stall collapses the planned lift 14x (482 -> 35
   counts); restoring a demo-typical value recovers it (566)
 
 Trades logged: depth diversity cost delta some seat completion (72 -> 49) while

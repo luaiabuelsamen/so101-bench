@@ -4,8 +4,9 @@
 place rate by (1) adding the servo's own tracking error to the observation,
 (2) fixing two measured data-coverage gaps (recovery kicks, grip-depth
 diversity), and (3) running the standard training recipe at scale. A raw
-action-history control matches the explicit channel at scale — the missing
-ingredient was *information*, not representation — and a 30-line bus-observable
+action-history control performs equivalently to the explicit channel at scale
+(n=2 seeds; the form-vs-information question is open) — while policies with
+neither plateau at ~20% grasp commitment — and a 30-line bus-observable
 guard eliminates 96% of crush events on any policy without retraining. Full
 evidence chain in `docs/findings.md`; every claim has an n and a CI.
 

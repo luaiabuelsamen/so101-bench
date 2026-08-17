@@ -345,7 +345,7 @@ right that no amount of task-level iteration substitutes for it.
 
 ## Phase 1b: validity and transition audit
 
-Three follow-ups demanded by audit before any task benchmark is run. Detector
+Three follow-ups demanded by review before any task benchmark is run. Detector
 thresholds were frozen in advance (the expert's constants); nothing was tuned
 on any split. Full data in `results/phase1b.json`.
 
@@ -552,8 +552,7 @@ thresholds 60-120 N.
 Nothing broader is supported: delta is not a general force sensor (it is
 non-informative while the object slides, and unusable during fast transport,
 where the true grip force itself swings 0-63 N with a frozen jaw). The
-clamp/delta/oracle comparison is now interpretable under this protocol and is
-the next authorised step.
+clamp/delta/oracle comparison is now interpretable under this protocol.
 
 ## Final tournament: clamp matches all methods, and why that is the finding
 
@@ -580,7 +579,7 @@ stall-seated clamping.** That is reported as the result, not retuned away.
 
 ### Why, and what it actually says about the channel
 
-The audit-required shared seating logic changes what "clamp" means. Stall-based
+The protocol-required shared seating logic changes what "clamp" means. Stall-based
 seating stops where the object is, so seat-then-2-counts lands at a
 width-independent ~30-39 N grip (p95 38.8 N across all widths) -- inside every
 window. The "no-feedback" baseline is therefore already using the
@@ -729,14 +728,18 @@ deployable scripted baseline band (47-67% = expert + realistic pose noise) and
 approaching the privileged ceiling (83%). Picks reached ~85-90%; the residual
 leak is transport retention, as the funnels predicted.
 
-**The base_hist control resolves the causality question in favour of
-information over representation:** raw action history matches explicit delta
-at scale (60% vs 57%). Standard ACT's failure was a MISSING INPUT -- action
-history / load information -- not an inability to use it; given the raw
-ingredients at sufficient compute, the network learns the subtraction itself.
-The tracking-error form remains the minimal, interpretable representation, and
-at Jetson scale (12k steps, 96 px) the explicit form was the one that worked;
-whether base_hist matches there too is an open cell (future work).
+**The base_hist control: indistinguishable from delta at this n.** Pooled
+60% vs 57%, but per-seed the cells are 60/59 and 63/51 -- the within-policy
+seed spread (12 points) is four times the between-policy gap, and two seeds
+cannot separate a 3-point difference. The honest statement: at scale, raw
+action history and the explicit tracking-error form perform equivalently
+within our statistical resolution; the causality question (information vs
+representation) is NOT resolved by this cell and would need ~5+ seeds per arm.
+What stands regardless, from the small-scale ladder: policies without any form
+of action-history input plateau at 16-24% lift-commitment across three data
+recipes, while channel-bearing policies reach 47-76% -- the *information* is
+necessary; which *form* it takes appears not to matter at scale and was only
+observed (not isolated) to matter at low compute.
 
 **Competence arrived gripping hard:** every scaled policy crushes heavily at
 the 120 N tier (43-68/100) -- the depth-diverse demos teach grips up to

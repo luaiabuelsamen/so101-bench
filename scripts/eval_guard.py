@@ -41,6 +41,13 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 GUARD_COUNTS = 4.0          # deepest allowed squeeze past detected seat
 STALL_FRACTION = 0.3
 STALL_WINDOW = 4            # frames of jaw history at the policy's 15 Hz rate
+#: The servo tracks at most ~6.5 counts per 30 Hz control frame (measured:
+#: 0.0100 rad/frame free-running). A stall test that compares measured motion
+#: against COMMANDED travel false-positives whenever a policy commands faster
+#: than the servo can slew -- the scaled ACT policy does exactly that, and the
+#: unclamped guard latched phantom seats at open aperture (0/50, 0 N grip).
+#: Feasible travel is the correct denominator.
+MAX_SLEW_PER_FRAME = 13.0   # counts per policy step (2 control frames)
 CRUSH_TIERS = [-1.0, 120.0, 60.0]
 EPISODES = 30
 
@@ -62,8 +69,9 @@ class JawGuard:
             and len(self.hist) == STALL_WINDOW + 1
         ):
             cmd_travel = abs(jaw_cmd_counts - self.last_cmd) * STALL_WINDOW
+            feasible = min(cmd_travel, MAX_SLEW_PER_FRAME * STALL_WINDOW)
             moved = abs(self.hist[-1] - self.hist[0])
-            if cmd_travel > 2.0 and moved < STALL_FRACTION * cmd_travel:
+            if feasible > 2.0 and moved < STALL_FRACTION * feasible:
                 self.seat_jaw = jaw_meas_counts
         self.last_cmd = jaw_cmd_counts
         if self.seat_jaw is not None:
