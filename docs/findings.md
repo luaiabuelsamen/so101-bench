@@ -712,3 +712,34 @@ the v2/v3 data recipes where it applies.
 Consequence for the thesis: the channel is not merely helpful for learned
 policies -- on this stack it is the enabling observation for contact
 commitment, shown by intervention on the trained model, not correlation.
+
+## Scale run (H100): the ladder tops out at 57-60%, and the control decides the framing
+
+600 depth-diverse + kicked demonstrations, 224 px, 50k steps, batch 64 — the
+standard recipe this project had been under-running by ~6x. Four containers,
+~$26 of credits, evals run locally (n=100 per cell, Wilson CIs):
+
+| policy | no-limit success | pooled over 2 seeds | 120 N tier |
+|---|---|---|---|
+| delta | 63 / 51 | **57%** | 34 / 11 (43-59 crushed) |
+| base_hist (raw a[t-1], no subtraction) | 60 / 59 | **60%** | 18 / 10 (61-68 crushed) |
+
+The success ladder end to end: 5 -> 17 -> 21 -> **57-63%**, now inside the
+deployable scripted baseline band (47-67% = expert + realistic pose noise) and
+approaching the privileged ceiling (83%). Picks reached ~85-90%; the residual
+leak is transport retention, as the funnels predicted.
+
+**The base_hist control resolves the causality question in favour of
+information over representation:** raw action history matches explicit delta
+at scale (60% vs 57%). Standard ACT's failure was a MISSING INPUT -- action
+history / load information -- not an inability to use it; given the raw
+ingredients at sufficient compute, the network learns the subtraction itself.
+The tracking-error form remains the minimal, interpretable representation, and
+at Jetson scale (12k steps, 96 px) the explicit form was the one that worked;
+whether base_hist matches there too is an open cell (future work).
+
+**Competence arrived gripping hard:** every scaled policy crushes heavily at
+the 120 N tier (43-68/100) -- the depth-diverse demos teach grips up to
+~100 N and the policies imitate the distribution. Safety therefore stays
+architectural; the guard-wrapper integration on the scaled checkpoint is the
+final experiment.

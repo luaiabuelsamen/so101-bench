@@ -1,0 +1,90 @@
+{
+  "delta": [
+    {
+      "crush": -1.0,
+      "success": 63,
+      "crushed": 0,
+      "dropped": 26,
+      "ci": [
+        0.532,
+        0.718
+      ]
+    },
+    {
+      "crush": 120.0,
+      "success": 34,
+      "crushed": 43,
+      "dropped": 13,
+      "ci": [
+        0.255,
+        0.437
+      ]
+    }
+  ],
+  "delta_s1": [
+    {
+      "crush": -1.0,
+      "success": 51,
+      "crushed": 0,
+      "dropped": 28,
+      "ci": [
+        0.413,
+        0.606
+      ]
+    },
+    {
+      "crush": 120.0,
+      "success": 11,
+      "crushed": 59,
+      "dropped": 10,
+      "ci": [
+        0.063,
+        0.186
+      ]
+    }
+  ],
+  "base_hist": [
+    {
+      "crush": -1.0,
+      "success": 60,
+      "crushed": 0,
+      "dropped": 26,
+      "ci": [
+        0.502,
+        0.691
+      ]
+    },
+    {
+      "crush": 120.0,
+      "success": 18,
+      "crushed": 61,
+      "dropped": 10,
+      "ci": [
+        0.117,
+        0.267
+      ]
+    }
+  ],
+  "base_hist_s1": [
+    {
+      "crush": -1.0,
+      "success": 59,
+      "crushed": 0,
+      "dropped": 17,
+      "ci": [
+        0.492,
+        0.681
+      ]
+    },
+    {
+      "crush": 120.0,
+      "success": 10,
+      "crushed": 68,
+      "dropped": 5,
+      "ci": [
+        0.055,
+        0.174
+      ]
+    }
+  ]
+}
