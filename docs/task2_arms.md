@@ -37,3 +37,13 @@ is information (E sharpest if the motion confound is the small-data
 blocker); B ≈ C from the H100 result; guard row converts C/E/F's crush
 tiers without deleting >15 points of success. If A≈B≈C≈D≈E≈F, the design
 claim dies and the paper is observability + guard, as the instruction says.
+
+## Compute policy (binding)
+
+Seeds are NEVER reduced below 3 to fit compute; if the box is the
+constraint, the grid takes longer, and if more seeds are needed for a
+claim, the cell reruns. Jetson serial = ~3 h/cell, 36 cells ~= 4.5 days.
+H100 alternative: ~12-15 min/cell train (eval stays local, free), ~9-10
+GPU-hours ~= $40-50 for the full grid at 5 seeds -- exceeds the ~$4 Modal
+credits remaining; a top-up is the user's call. Until then: Jetson serial,
+3 seeds, arms in order A, B, D, E, F, then the guarded column.

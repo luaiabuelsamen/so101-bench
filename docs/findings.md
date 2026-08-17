@@ -890,3 +890,12 @@ note stands: differences under ~15 points are below this budget's
 resolution. Grid dataset declared as FULL demos_v3 (280 episodes): the
 instruction's "200-episode demos_v3" miscounted the set, and 280 is the
 config whose baseline is reproduced.
+
+**Retroactive scope note (2026-08-17, after sigma_seed was measured):** with
+per-seed spread ~10 points at n=100 (and larger at smaller n), every
+two-seed comparison in this repo is downgraded to "not resolved": the
+H100 base_hist-vs-delta cell (already softened) and any tournament-era
+"information not representation" phrasing are readings of noise at that
+resolution. Claims stand only where the gap exceeds the measured spread
+(e.g., channel-bearing vs channel-free arms, 16-24% vs 47-76% conditional
+lift -- a 30+ point gap).
