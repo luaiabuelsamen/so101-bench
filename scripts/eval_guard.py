@@ -150,6 +150,8 @@ def main():
     ap.add_argument("--arms", nargs="*", default=["base", "delta", "delta_q16"])
     ap.add_argument("--ckpt", default="checkpoints/act")
     ap.add_argument("--json", default="results/guard_ab.json")
+    ap.add_argument("--image-size", type=int, default=96)
+    ap.add_argument("--seed", type=int, default=2000)
     args = ap.parse_args()
 
     rows = []
@@ -165,8 +167,8 @@ def main():
         for crush in CRUSH_TIERS:
             for guarded in (False, True):
                 env = DemoEnv(
-                    seed=2000, cameras=("front", "gripper_fpv"), image_size=96,
-                    stride=2,
+                    seed=args.seed, cameras=("front", "gripper_fpv"),
+                    image_size=args.image_size, stride=2,
                     obs_quantum=16.0 if arm == "delta_q16" else 1.0,
                     crush_newtons=None if crush <= 0 else crush,
                     expert=ExpertConfig(),
