@@ -71,9 +71,11 @@ class FastChunkDataset(torch.utils.data.Dataset):
     the two 96px images per item (~ms). Same tensors out, ~100x faster.
     """
 
-    def __init__(self, ds, arm: str, quantum: float = 1.0):
+    def __init__(self, ds, arm: str, quantum: float = 1.0,
+                 max_episodes: int | None = None):
         self.arm = arm
         self.q = quantum
+        self.max_episodes = max_episodes
         # Normalisation lives HERE, not in the policy: in lerobot 0.3.4 the
         # Normalize step moved out of the policies into external processors,
         # and ACTPolicy silently ignores a dataset_stats kwarg. Training on
@@ -93,6 +95,11 @@ class FastChunkDataset(torch.utils.data.Dataset):
         self.A = np.asarray(hf["action"], dtype=np.float32)
         ep = np.asarray(hf["episode_index"], dtype=np.int64)
         self.hf = ds.hf_dataset
+        if max_episodes is not None:
+            # front-truncation only: keeps frame indices aligned with
+            # self.hf, which __getitem__ still indexes for images
+            n = int(np.searchsorted(ep, max_episodes))
+            self.S, self.A, ep = self.S[:n], self.A[:n], ep[:n]
         # episode end index (exclusive) per frame, for chunk padding
         ends = np.empty(len(ep), dtype=np.int64)
         start = 0
@@ -189,7 +196,8 @@ def train(args):
     ds = load_dataset(args.root)
     quantum = 16.0 if args.arm == "delta_q16" else 1.0
     mode = {"base": "base", "base_hist": "hist"}.get(args.arm, "delta")
-    wrapped = FastChunkDataset(ds, mode, quantum)
+    wrapped = FastChunkDataset(ds, mode, quantum,
+                               max_episodes=args.max_episodes)
     state_dim = 6 if args.arm == "base" else 12
     policy = build_policy(state_dim, args.image_size).to(DEVICE)
     policy.train()
@@ -347,6 +355,9 @@ def main():
         "--arm", choices=("base", "delta", "delta_q16", "base_hist"), required=True
     )
     parser.add_argument("--image-size", type=int, default=96)
+    parser.add_argument("--max-episodes", type=int, default=None,
+                        help="train on only the first N episodes (front-"
+                             "truncated; Task 2 uses 200 of demos_v3's 280)")
     parser.add_argument("--wandb", action="store_true",
                         help="log loss to wandb (needs WANDB_API_KEY in env)")
     parser.add_argument("--root", default="data/demos_native")
