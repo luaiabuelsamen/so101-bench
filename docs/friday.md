@@ -14,9 +14,17 @@ deep-jam high-delta frames. In the wild the channel is a struggle signal,
 not a success signal. Dies: the strong retroactivity claim (corpus-mined
 success labels from delta) — and the paper's corpus section now argues
 recoverable-and-informative with task-dependent sign, which is the
-enforcement story, not the learning-input story. Also this week: the jaw
-guard needed two more phantom-seat fixes on the scaled policy (onset
-latency, creep-tracking); the detector is now validated offline on
-instrumented traces (0 phantoms / 0 misses, force-at-seat ≤ 49 N vs raw
-90–156 N peaks) with the A/B on a held-out seed running. Task 2 grid
-starts Monday on the sim result, as the instruction says it should.
+enforcement story, not the learning-input story. Also this week: Rule 1
+landed and immediately earned its keep — the guarded-policy 0/30 that had
+three hypotheses spent on it (including a falsified counterfactual) was
+settled by a two-minute pairing: the closed-loop teacher scores 25/30
+through the same guard (raw 28/30, grip 39 N), so the guard is fine and
+the policy failure is a filed ticket, not a result. Two real boundaries
+fell out of the pairing for free: open-loop-timed controllers break behind
+a rate-limited plant (clamp expert 30→0 — wrapper-alters-plant is general,
+not policy-specific), and no action filter governs contact-entry
+transients (60 N tier fails raw AND guarded). Dies also: my guard-saga
+workflow — four detector modes excavated at GPU prices that chapter-3
+controls (or the Robotiq note already in thread D) supplies at boot. Task
+2 grid starts Monday on the sim result, with trained-through-guard as the
+added column and the guard proven on a working reference first.

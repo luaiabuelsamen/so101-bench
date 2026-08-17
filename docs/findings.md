@@ -788,3 +788,49 @@ prediction and stands on the sim causal chain. Known limits, frozen with
 the protocol: the success proxy is unvalidated against ground truth (no
 labels exist in the corpus); multi-grasp tasks are excluded by design;
 n=16 not 20.
+
+## The guard, paired (2026-08-16, post Rule 1) -- wrapper-alters-plant, three ways
+
+Rule 1 (docs/phase3.md) arrived after four phantom-seat modes were excavated
+one GPU run at a time; applying it retroactively took two CPU-minutes per
+question and settled everything the GPU runs could not.
+
+**The pairing** (`scripts/eval_expert_guarded.py`, seed 3000, identical
+protocol to the policy A/B): the closed-loop force-mode teacher through
+guard v4 (net-stall OR lag-excess detection; 12-count ~= +24 N force budget
+past seat; 4 counts/frame closing rate limit) scores **25/30 placed vs
+28/30 raw** at crush-off, grip 39 N both -- the guard costs a competent
+controller ~3 episodes in 30 (the deleted-success accounting, now measured
+on a working reference). At 120 N: 23 vs 26. **The guard is compatible with
+competent closed-loop control.**
+
+**Boundary 1 (timing):** the open-loop clamp expert collapses 30/30 -> 0/30
+under the same guard -- its fixed-duration grasp window expires before the
+rate-limited jaw arrives. Any controller whose internal timing or
+thresholds were tuned on the unwrapped plant can break when wrapped: the
+expert's own commanded-travel stall test phantom-seats behind the rate
+limiter exactly the way the guard's first detector did behind fast
+policies. Same law, one layer down.
+
+**Boundary 2 (entry transients):** at the 60 N tier the teacher fails raw
+AND guarded (3/30, ~25 crush latches from contact-entry spikes): an action
+filter has no authority over kinetic energy already in flight; it caps
+sustained squeeze, not first-contact impulse. This is the known limit of
+reactive schemes (cf. momentum-observer reflexes, which also act
+post-detection) and it bounds what any bus-side guard can claim.
+
+**The policy ticket (NOT a finding):** the scaled delta policy under the
+v3 guard scored 0/30 while gripping ~40 N. Filed as a defect per Rule 1:
+the pairing proves the guarded task feasible; the counterfactual
+(scratchpad/counterfactual_commit.py: demo-typical -32-count delta injected
+at latch while the guard held ~40 N) FAILED to restore lifts (3/30 picked,
+1/30 placed ~= baseline), killing the "policy waits for its learned 77 N
+commitment feeling" hypothesis. Open. Next actions on the ticket: rerun
+the A/B against guard v4 (the guard under which the reference was proven);
+if still ~0, probe the state channel (the clamped jaw POSITION in s[t],
+not the delta feeling, may be the out-of-distribution input).
+
+Fix 2 from review (train through the guard) is now wired:
+`PickScene.jaw_guard_factory` filters every `hold()` at the choke point
+where actions are recorded, so guard-collected demos carry applied
+(capped) actions by construction.

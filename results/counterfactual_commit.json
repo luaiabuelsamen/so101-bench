@@ -1,0 +1,212 @@
+[
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 39.378835380593856,
+    "latch": 125,
+    "rise": 0.00047083836490877107
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 0.8710818574030376,
+    "latch": 123,
+    "rise": 0.0005398592699489835
+  },
+  {
+    "picked": true,
+    "placed": false,
+    "peak_force": 29.499516090204086,
+    "latch": 145,
+    "rise": 0.05937963764620009
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 46.2562649426732,
+    "latch": 147,
+    "rise": 0.002717064608267983
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 74.05525254510775,
+    "latch": 142,
+    "rise": 0.0
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 42.402471274661124,
+    "latch": 153,
+    "rise": 0.004380122601968767
+  },
+  {
+    "picked": true,
+    "placed": false,
+    "peak_force": 48.81931448475376,
+    "latch": 152,
+    "rise": 0.08077352740726491
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 56.90223676308529,
+    "latch": 138,
+    "rise": 0.00032477759196310185
+  },
+  {
+    "picked": true,
+    "placed": true,
+    "peak_force": 369.97612187893986,
+    "latch": 103,
+    "rise": 0.10773684718255105
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 43.21445336353726,
+    "latch": 141,
+    "rise": 0.0021272379486517168
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 12.750009611044243,
+    "latch": 124,
+    "rise": 0.0007785135356027789
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 37.81702151438658,
+    "latch": 142,
+    "rise": 0.008233848374927494
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 31.117377525996474,
+    "latch": 148,
+    "rise": 0.004607950807881719
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 44.79377804850495,
+    "latch": 182,
+    "rise": 0.0
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 33.12079530536594,
+    "latch": 149,
+    "rise": 0.0028671277740251327
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 31.449029070544277,
+    "latch": 146,
+    "rise": 0.0106206091117097
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 51.221493159089306,
+    "latch": 119,
+    "rise": 0.0
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 55.98525725462586,
+    "latch": 145,
+    "rise": 0.0018255322940238516
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 39.006906882472876,
+    "latch": 150,
+    "rise": 0.01683329351913676
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 88.53640567046253,
+    "latch": 145,
+    "rise": 0.0
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 46.495202989748805,
+    "latch": 144,
+    "rise": 0.0023852279348600125
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 43.26190209068275,
+    "latch": 144,
+    "rise": 0.0
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 46.81204237959986,
+    "latch": 160,
+    "rise": 0.01855332519199454
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 32.752343638137646,
+    "latch": 149,
+    "rise": 0.0001603331468888053
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 31.52796248691102,
+    "latch": 146,
+    "rise": 0.012986204159826611
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 41.49276613702409,
+    "latch": 150,
+    "rise": 0.011882072059049675
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 38.65496450244059,
+    "latch": null,
+    "rise": 0.0
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 7.148889348231615,
+    "latch": 135,
+    "rise": 0.0008010783025789031
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 55.8945975052137,
+    "latch": 147,
+    "rise": 0.006725040541319879
+  },
+  {
+    "picked": false,
+    "placed": false,
+    "peak_force": 48.143855602323114,
+    "latch": 134,
+    "rise": 0.0019857026131895605
+  }
+]

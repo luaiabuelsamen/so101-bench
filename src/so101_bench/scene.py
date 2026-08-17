@@ -153,6 +153,12 @@ class PickScene:
         self.peak_grip_n = 0.0
         self.last_action = np.zeros(self.model.nu)
         self.recorder = None
+        # Optional runtime jaw guard applied inside hold(): set a factory and
+        # every reset() arms a fresh single-shot instance, so collection and
+        # evaluation both run "through the guard" with the recorded action
+        # being the APPLIED (guarded) one -- bus semantics.
+        self.jaw_guard_factory = None
+        self.jaw_guard = None
 
         self._renderer = mujoco.Renderer(self.model, height, width) if render else None
         m = self.model
@@ -224,6 +230,9 @@ class PickScene:
         m, d, dr = self.model, self.data, self.dr
         mujoco.mj_resetDataKeyframe(m, d, m.key("home").id)
         self._apply_randomisation()
+        self.jaw_guard = (
+            self.jaw_guard_factory() if self.jaw_guard_factory else None
+        )
 
         if block_xy is None:
             block_xy = (
@@ -403,6 +412,11 @@ class PickScene:
             c = np.asarray(ctrl, dtype=float)
             if self.quantise:
                 c = np.round(c / RAD_PER_TICK) * RAD_PER_TICK
+            if self.jaw_guard is not None:
+                jaw = self.jaw_guard(
+                    float(self.state_ticks()[5]), float(c[5] / RAD_PER_TICK)
+                )
+                c[5] = (round(jaw) if self.quantise else jaw) * RAD_PER_TICK
             if self.recorder is not None:
                 self.recorder.append(
                     state=self.state_ticks(), action=c / RAD_PER_TICK, scene=self

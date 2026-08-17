@@ -53,6 +53,16 @@ Cadence: every Friday one paragraph — what was predicted, what happened,
 what dies. Anything not on this list needs a sentence for why it serves the
 thesis, or it isn't started.
 
+Rule 1 (added 2026-08-16 after the guard saga): no null result enters
+findings.md without (a) a paired working reference under identical protocol,
+(b) that reference failing across the claimed boundary, (c) a citation for
+the nearest prior method and why it doesn't cover this case. Otherwise it's
+a bug, filed as one. A 0/N is a defect until proven a boundary. In practice:
+before a learned policy's failure gets a sentence, run the scripted expert
+under the identical protocol, and ask what a gripper engineer (Robotiq:
+seat by stall, hold by position offset, monitor slip — it was already in
+thread D's notes) would have built before running anything.
+
 ---
 
 # Task 1 operational freezes (written 2026-08-16, BEFORE the run; not to be iterated)

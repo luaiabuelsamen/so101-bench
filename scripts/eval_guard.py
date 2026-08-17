@@ -35,6 +35,7 @@ import torch
 sys.path.insert(0, str(Path(__file__).parent))
 
 from so101_bench import DemoEnv, ExpertConfig  # noqa: E402
+from so101_bench.guard import JawGuard  # noqa: E402
 from so101_bench.scene import JAW_SHUT, RAD_PER_TICK  # noqa: E402
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
