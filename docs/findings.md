@@ -858,3 +858,27 @@ still crushed 15/30 raw at the 60 N tier (twin: 10/30) and gripped 52 N
 median (twin: 45 N). Demonstration-level force bounds do not bound the
 clone; enforcement stays architectural, consistent with the scaled-policy
 result.
+
+## Gate 1 closed: instrumentation audit and baseline reproduction (2026-08-17)
+
+Ordered by the external review after a floor-level twin was misread against
+an H100-class reference. Every cell measured, none argued:
+
+| question | instrument | result |
+|---|---|---|
+| are the eval episode streams equal? | harness-free teacher, both seeds | 24-28/30 both; seed-3000 not harder |
+| do the two harnesses agree at floor? | twin ckpts, both harnesses | 2-4/30 everywhere |
+| do they agree at a non-floor point? | H100 ckpt, same seed 3000, both | **15/30 vs 13/30 -- match** |
+| did training/env code change? | diff vs historical tree | only inactive-by-default flags; expert.py untouched |
+| does the 21/100 cell reproduce? | full-280 retrain, seeds 0,1 | **11/100 and 31/100 -- brackets 21** |
+
+Verdict: no regression anywhere; the historical 21% was a single unseeded
+draw from a distribution whose per-seed spread at this budget is ~20 points
+at n=100 -- larger than the 12 points documented at H100 scale, and never
+measured at small budget until now. The "5x baseline collapse" decomposed
+into: a reference-class error (H100 rows quoted against small-budget
+cells), a 200-vs-280-episode subset difference, and this seed variance.
+
+Grid-design consequence, binding for Task 2: with sigma_seed ~ 10 points,
+3 seeds x n=100 resolves arm differences of roughly >=15 points and nothing
+finer. Grid claims are restricted accordingly; nothing is claimed at n=30.
