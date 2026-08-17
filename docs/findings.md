@@ -882,3 +882,11 @@ cells), a 200-vs-280-episode subset difference, and this seed variance.
 Grid-design consequence, binding for Task 2: with sigma_seed ~ 10 points,
 3 seeds x n=100 resolves arm differences of roughly >=15 points and nothing
 finer. Grid claims are restricted accordingly; nothing is claimed at n=30.
+
+Seed 2 completes the spread: **{11, 25, 31}/100** (mean 22.3, sigma ~10.3);
+the historical 21 sits inside. These three runs double as Task 2 grid arm C
+(delta_input) x 3 seeds -- the grid's channel row is done, and its scale
+note stands: differences under ~15 points are below this budget's
+resolution. Grid dataset declared as FULL demos_v3 (280 episodes): the
+instruction's "200-episode demos_v3" miscounted the set, and 280 is the
+config whose baseline is reproduced.
