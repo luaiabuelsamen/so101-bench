@@ -115,6 +115,41 @@ class FastChunkDataset(torch.utils.data.Dataset):
         self.A_prev[same] = self.A[np.flatnonzero(same) - 1]
         self.first = ~same
 
+        if arm == "excess":
+            # E (load_prior): delta minus the free-motion lag baseline.
+            # K_hat per joint fit by least squares on jaw-open frames (the
+            # only contact in this task is the jaw's, so jaw-open ~= free
+            # motion) -- label-free self-labeling, frozen before training.
+            A_prev2 = np.zeros_like(self.A)
+            same2 = np.zeros(len(ep), dtype=bool)
+            same2[2:] = ep[2:] == ep[:-2]
+            A_prev2[same2] = self.A[np.flatnonzero(same2) - 2]
+            self.rate = np.where(same2[:, None], self.A_prev - A_prev2, 0.0)
+            delta_all = np.where(same[:, None], self.A_prev - self.S, 0.0)
+            free = self.A[:, 5] > np.quantile(self.A[:, 5], 0.30)
+            self.k_hat = np.zeros(6, np.float32)
+            for j in range(6):
+                r, d_ = self.rate[free, j], delta_all[free, j]
+                denom = float((r * r).sum())
+                self.k_hat[j] = float((r * d_).sum() / denom) if denom > 1e-6 else 0.0
+
+        if arm == "token":
+            # F (event_token): the frozen guard-v4 DETECTOR (no cap, no rate
+            # limit -- recorded commands are already the applied ones) run
+            # causally over each episode's (s[t], a[t-1]) jaw pairs, matching
+            # what the runtime sees before acting at t.
+            from so101_bench.guard import JawGuard
+            seat = np.zeros(len(self.S), np.float32)
+            start = 0
+            for i in range(1, len(ep) + 1):
+                if i == len(ep) or ep[i] != ep[i - 1]:
+                    g = JawGuard(max_close_rate=1e9)
+                    for t in range(start, i):
+                        g(float(self.S[t, 5]), float(self.A_prev[t, 5]))
+                        seat[t] = 0.0 if g.seat_jaw is None else 1.0
+                    start = i
+            self.seat = seat
+
     def __len__(self):
         return len(self.S)
 
@@ -132,17 +167,31 @@ class FastChunkDataset(torch.utils.data.Dataset):
         pad[n:] = True
 
         s = self._quant(self.S[i])
+        s_n = (s - self.s_mean) / self.s_std
+        delta = np.zeros(6, np.float32) if self.first[i] else self.A_prev[i] - s
+        delta_target = None
         if self.arm == "base":
-            state = (s - self.s_mean) / self.s_std
+            state = s_n
         elif self.arm == "hist":
             a_prev = s if self.first[i] else self.A_prev[i]
             state = np.concatenate(
-                [(s - self.s_mean) / self.s_std, (a_prev - self.a_mean) / self.a_std]
+                [s_n, (a_prev - self.a_mean) / self.a_std]
+            )
+        elif self.arm == "resid":
+            state = s_n
+            delta_target = (delta - self.d_mean) / self.d_std
+        elif self.arm == "excess":
+            excess = delta - self.k_hat * self.rate[i].astype(np.float32)
+            state = np.concatenate(
+                [s_n, (excess - self.d_mean) / self.d_std]
+            )
+        elif self.arm == "token":
+            state = np.concatenate(
+                [s_n, np.full(6, self.seat[i], np.float32)]
             )
         else:
-            delta = np.zeros(6, np.float32) if self.first[i] else self.A_prev[i] - s
             state = np.concatenate(
-                [(s - self.s_mean) / self.s_std, (delta - self.d_mean) / self.d_std]
+                [s_n, (delta - self.d_mean) / self.d_std]
             )
 
         row = self.hf[int(i)]
@@ -151,6 +200,8 @@ class FastChunkDataset(torch.utils.data.Dataset):
             "action": torch.from_numpy(chunk),
             "action_is_pad": torch.from_numpy(pad),
         }
+        if delta_target is not None:
+            item["delta_target"] = torch.from_numpy(delta_target)
         for cam in ("front", "gripper_fpv"):
             img = np.asarray(row[f"observation.images.{cam}"])
             t = torch.from_numpy(img.copy())
@@ -163,10 +214,38 @@ class FastChunkDataset(torch.utils.data.Dataset):
         return item
 
 
-def build_policy(state_dim: int, image_size: int = 96):
+def build_policy(state_dim: int, image_size: int = 96, aux: bool = False):
     from lerobot.configs.types import FeatureType, PolicyFeature
     from lerobot.policies.act.configuration_act import ACTConfig
     from lerobot.policies.act.modeling_act import ACTPolicy
+
+    class ResidualACT(ACTPolicy):
+        """Arm D: base observation only; the encoder additionally predicts
+        delta[t] (normalized) through a small head, weight 0.1. The channel
+        enters as a training signal, never as an input. NOTE: re-loading
+        this arm from disk needs strict=False (extra aux_head keys); the
+        grid evaluates in-process so the plain path is unaffected."""
+
+        def __init__(self, cfg):
+            super().__init__(cfg)
+            d = cfg.dim_model
+            self.aux_head = torch.nn.Sequential(
+                torch.nn.Linear(d, 64), torch.nn.ReLU(), torch.nn.Linear(64, 6)
+            )
+            self._enc = None
+            self.model.encoder.register_forward_hook(
+                lambda m, inp, out: setattr(self, "_enc", out)
+            )
+
+        def forward(self, batch):
+            loss, info = super().forward(batch)
+            enc = self._enc
+            b = batch["observation.state"].shape[0]
+            lat = enc.mean(dim=0) if enc.shape[1] == b else enc.mean(dim=1)
+            aux_mse = torch.nn.functional.mse_loss(
+                self.aux_head(lat), batch["delta_target"]
+            )
+            return loss + 0.1 * aux_mse, dict(info, aux_mse=float(aux_mse))
 
     cfg = ACTConfig(
         input_features={
@@ -189,17 +268,19 @@ def build_policy(state_dim: int, image_size: int = 96):
         vision_backbone="resnet18",
         device=DEVICE,
     )
-    return ACTPolicy(cfg)
+    return ResidualACT(cfg) if aux else ACTPolicy(cfg)
 
 
 def train(args):
     ds = load_dataset(args.root)
     quantum = 16.0 if args.arm == "delta_q16" else 1.0
-    mode = {"base": "base", "base_hist": "hist"}.get(args.arm, "delta")
+    mode = {"base": "base", "base_hist": "hist", "resid": "resid",
+            "excess": "excess", "token": "token"}.get(args.arm, "delta")
     wrapped = FastChunkDataset(ds, mode, quantum,
                                max_episodes=args.max_episodes)
-    state_dim = 6 if args.arm == "base" else 12
-    policy = build_policy(state_dim, args.image_size).to(DEVICE)
+    state_dim = 6 if args.arm in ("base", "resid") else 12
+    policy = build_policy(state_dim, args.image_size,
+                          aux=(args.arm == "resid")).to(DEVICE)
     policy.train()
 
     loader = torch.utils.data.DataLoader(
@@ -266,9 +347,10 @@ def train(args):
     out = Path(args.out) / tag
     out.mkdir(parents=True, exist_ok=True)
     policy.save_pretrained(out)
+    extra = {"k_hat": wrapped.k_hat} if hasattr(wrapped, "k_hat") else {}
     np.savez(out / "norm_stats.npz", s_mean=wrapped.s_mean, s_std=wrapped.s_std,
              a_mean=wrapped.a_mean, a_std=wrapped.a_std,
-             d_mean=wrapped.d_mean, d_std=wrapped.d_std)
+             d_mean=wrapped.d_mean, d_std=wrapped.d_std, **extra)
     print(f"saved {out}")
     return policy, wrapped
 
@@ -281,7 +363,7 @@ def evaluate(policy, data, args):
     results = []
     for crush in args.eval_crush:
         env = DemoEnv(
-            seed=1000,
+            seed=getattr(args, "eval_seed", 1000),
             cameras=("front", "gripper_fpv"),
             image_size=args.image_size,
             stride=2,
@@ -296,16 +378,31 @@ def evaluate(policy, data, args):
             policy.reset()
             z0 = scene.block_pos()[2]
             a_prev = None
+            a_prev2 = None
             peak = 0.0
+            if args.arm == "token":
+                from so101_bench.guard import JawGuard
+                gd = JawGuard(max_close_rate=1e9)   # detector only, no cap
             for _t in range(260):        # 260 x (2/30 s) ~ 17 s budget
                 s = torch.as_tensor(scene.state_ticks(), dtype=torch.float32)
                 s_n = (s - torch.from_numpy(data.s_mean)) / torch.from_numpy(data.s_std)
-                if args.arm == "base":
+                if args.arm in ("base", "resid"):
                     s_in = s_n
                 elif args.arm == "base_hist":
                     ap = a_prev if a_prev is not None else s
                     ap_n = (ap - torch.from_numpy(data.a_mean)) / torch.from_numpy(data.a_std)
                     s_in = torch.cat([s_n, ap_n])
+                elif args.arm == "excess":
+                    d = (a_prev - s) if a_prev is not None else torch.zeros_like(s)
+                    r = (a_prev - a_prev2) if a_prev2 is not None else torch.zeros_like(s)
+                    ex = d - torch.from_numpy(np.asarray(data.k_hat, np.float32)) * r
+                    ex_n = (ex - torch.from_numpy(data.d_mean)) / torch.from_numpy(data.d_std)
+                    s_in = torch.cat([s_n, ex_n])
+                elif args.arm == "token":
+                    jaw_prev = float(a_prev[5]) if a_prev is not None else float(s[5])
+                    gd(float(s[5]), jaw_prev)
+                    flag = 0.0 if gd.seat_jaw is None else 1.0
+                    s_in = torch.cat([s_n, torch.full((6,), flag)])
                 else:
                     d = (a_prev - s) if a_prev is not None else torch.zeros_like(s)
                     d_n = (d - torch.from_numpy(data.d_mean)) / torch.from_numpy(data.d_std)
@@ -323,6 +420,7 @@ def evaluate(policy, data, args):
                 action = a_norm * torch.from_numpy(data.a_std) + torch.from_numpy(
                     data.a_mean
                 )
+                a_prev2 = a_prev
                 a_prev = action.clone()
                 from so101_bench.scene import RAD_PER_TICK
 
@@ -352,7 +450,10 @@ def evaluate(policy, data, args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--arm", choices=("base", "delta", "delta_q16", "base_hist"), required=True
+        "--arm",
+        choices=("base", "delta", "delta_q16", "base_hist",
+                 "resid", "excess", "token"),
+        required=True,
     )
     parser.add_argument("--image-size", type=int, default=96)
     parser.add_argument("--max-episodes", type=int, default=None,
