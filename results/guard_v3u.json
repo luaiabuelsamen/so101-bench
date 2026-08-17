@@ -1,0 +1,86 @@
+[
+  {
+    "arm": "delta",
+    "crush": -1.0,
+    "guarded": false,
+    "success": 3,
+    "episodes": 30,
+    "ci": [
+      0.03459925995971615,
+      0.25621441315266624
+    ],
+    "crushed": 0,
+    "dropped": 4,
+    "peak_force_median": 44.6620991233423
+  },
+  {
+    "arm": "delta",
+    "crush": -1.0,
+    "guarded": true,
+    "success": 0,
+    "episodes": 30,
+    "ci": [
+      0.0,
+      0.113517091390478
+    ],
+    "crushed": 0,
+    "dropped": 0,
+    "peak_force_median": 42.120523848661136
+  },
+  {
+    "arm": "delta",
+    "crush": 120.0,
+    "guarded": false,
+    "success": 0,
+    "episodes": 30,
+    "ci": [
+      0.0,
+      0.113517091390478
+    ],
+    "crushed": 8,
+    "dropped": 0,
+    "peak_force_median": 43.45599788419358
+  },
+  {
+    "arm": "delta",
+    "crush": 120.0,
+    "guarded": true,
+    "success": 0,
+    "episodes": 30,
+    "ci": [
+      0.0,
+      0.113517091390478
+    ],
+    "crushed": 2,
+    "dropped": 0,
+    "peak_force_median": 43.443212165635245
+  },
+  {
+    "arm": "delta",
+    "crush": 60.0,
+    "guarded": false,
+    "success": 0,
+    "episodes": 30,
+    "ci": [
+      0.0,
+      0.113517091390478
+    ],
+    "crushed": 10,
+    "dropped": 0,
+    "peak_force_median": 44.309972031523735
+  },
+  {
+    "arm": "delta",
+    "crush": 60.0,
+    "guarded": true,
+    "success": 0,
+    "episodes": 30,
+    "ci": [
+      0.0,
+      0.113517091390478
+    ],
+    "crushed": 5,
+    "dropped": 0,
+    "peak_force_median": 39.690924671205295
+  }
+]

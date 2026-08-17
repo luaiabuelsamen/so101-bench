@@ -834,3 +834,27 @@ Fix 2 from review (train through the guard) is now wired:
 `PickScene.jaw_guard_factory` filters every `hold()` at the choke point
 where actions are recorded, so guard-collected demos carry applied
 (capped) actions by construction.
+
+## Fix 2 at small budget: floor-equal twins (2026-08-17, one seed each)
+
+Trained-through-guard delta (demos_v3g: the v3 recipe collected with guard
+v4 filtering hold(), 200 eps) vs its exact unguarded twin (first 200 eps of
+demos_v3), both 12k steps / 96 px / seed 0, both evaluated raw and guarded
+at seed 3000: **raw 2/30 vs 3/30, guarded 0/30 vs 0/30.** The pair is
+floor-equal -- and floor is the correct prior for this budget class (the
+pre-scale ladder's place rates were 5-21% across every recipe; the 43-60%
+figures belong to the 600-demo/50k-step/224px budget and are not a valid
+reference here, a comparison this entry corrects).
+
+Verdict, Rule-1-compliant: shielded-imitation collection neither helped nor
+hurt where the baseline itself is floor -- the fix-2 question is
+UNANSWERABLE at this budget and defers to (a) the Task 2 grid, whose D/E/F
+arms exist precisely to move the small-data floor and which now carry the
+trained-through-guard column, or (b) the H100 budget class on guarded data.
+
+Logged as observation, not claim (n=1 seed): the guarded-data policy did
+not inherit its demonstrations' force bound -- trained on <=40 N grips it
+still crushed 15/30 raw at the 60 N tier (twin: 10/30) and gripped 52 N
+median (twin: 45 N). Demonstration-level force bounds do not bound the
+clone; enforcement stays architectural, consistent with the scaled-policy
+result.

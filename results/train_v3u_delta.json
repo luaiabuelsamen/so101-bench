@@ -1,0 +1,27 @@
+{
+  "arm": "delta",
+  "steps": 12000,
+  "results": [
+    {
+      "crush": -1.0,
+      "success": 0,
+      "crushed": 0,
+      "dropped": 0,
+      "episodes": 0
+    },
+    {
+      "crush": 120.0,
+      "success": 0,
+      "crushed": 0,
+      "dropped": 0,
+      "episodes": 0
+    },
+    {
+      "crush": 60.0,
+      "success": 0,
+      "crushed": 0,
+      "dropped": 0,
+      "episodes": 0
+    }
+  ]
+}
