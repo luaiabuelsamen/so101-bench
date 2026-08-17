@@ -3,15 +3,15 @@
     "arm": "delta",
     "crush": -1.0,
     "guarded": false,
-    "success": 17,
+    "success": 13,
     "episodes": 30,
     "ci": [
-      0.3919700954540873,
-      0.7262276256938489
+      0.2737723743061511,
+      0.6080299045459127
     ],
     "crushed": 0,
-    "dropped": 10,
-    "peak_force_median": 123.06735359919185
+    "dropped": 13,
+    "peak_force_median": 122.34203975608412
   },
   {
     "arm": "delta",
@@ -24,8 +24,8 @@
       0.113517091390478
     ],
     "crushed": 0,
-    "dropped": 5,
-    "peak_force_median": 40.96178577046648
+    "dropped": 2,
+    "peak_force_median": 39.06468031213172
   },
   {
     "arm": "delta",
@@ -37,9 +37,9 @@
       0.09504978102401235,
       0.37306047381027446
     ],
-    "crushed": 18,
-    "dropped": 3,
-    "peak_force_median": 114.58607091885614
+    "crushed": 16,
+    "dropped": 4,
+    "peak_force_median": 114.66544979630868
   },
   {
     "arm": "delta",
@@ -52,8 +52,8 @@
       0.113517091390478
     ],
     "crushed": 1,
-    "dropped": 4,
-    "peak_force_median": 40.045326702939256
+    "dropped": 1,
+    "peak_force_median": 39.05279112700451
   },
   {
     "arm": "delta",
@@ -67,7 +67,7 @@
     ],
     "crushed": 27,
     "dropped": 0,
-    "peak_force_median": 60.58735773069068
+    "peak_force_median": 60.62283070044414
   },
   {
     "arm": "delta",
@@ -79,8 +79,8 @@
       0.0,
       0.113517091390478
     ],
-    "crushed": 4,
-    "dropped": 5,
-    "peak_force_median": 40.52217679932473
+    "crushed": 3,
+    "dropped": 1,
+    "peak_force_median": 39.047755668623644
   }
 ]
