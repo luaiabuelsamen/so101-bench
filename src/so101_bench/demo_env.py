@@ -156,6 +156,7 @@ class DemoEnv:
         max_attempts: int | None = None,
         repo_id: str = "so101_bench/pick_place",
         hook=None,
+        per_episode=None,
     ) -> CollectionReport:
         """Write ``episodes`` demonstrations as a LeRobotDataset.
 
@@ -190,6 +191,8 @@ class DemoEnv:
             if max_attempts is not None and attempted >= max_attempts:
                 log.warning("stopping after %d attempts with %d kept", attempted, kept)
                 break
+            if per_episode is not None:
+                per_episode(self)      # e.g. resample the expert's grip target
             result, frames = self.rollout(hook=hook)
             attempted += 1
             if only_success and not result.placed:
