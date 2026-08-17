@@ -147,11 +147,18 @@ def rollout(env, policy, st, arm: str, guarded: bool):
         }
         a_n = policy.select_action(obs).squeeze(0).cpu()
         action = a_n * torch.tensor(st["a_std"]) + torch.tensor(st["a_mean"])
-        a_prev = action.clone()
         cmd = action.numpy().astype(float)
         if guarded:
             cmd[5] = guard(float(scene.state_ticks()[5]), cmd[5])
         cmd[5] = max(cmd[5], JAW_SHUT / RAD_PER_TICK)
+        # Feed back the APPLIED command, not the policy's intention: on a
+        # real bus a[t-1] is what was sent to the servo, and the guard is
+        # part of the plant. Feeding the raw intention made delta explode
+        # ~10x past training range whenever the guard held the jaw (policy
+        # commands deep, jaw held at seat-4), and the delta-gated policy
+        # collapsed to 0/30 success while the force cap itself worked
+        # (results/guard_h100_v3_rawfeedback.json).
+        a_prev = torch.tensor(cmd, dtype=torch.float32)
         scene.hold(cmd * RAD_PER_TICK, frames=2)
         peak_rise = max(peak_rise, scene.block_pos()[2] - z0)
         peak_force = max(peak_force, scene.grip_force())
