@@ -71,7 +71,14 @@ class JawGuard:
             cmd_travel = abs(jaw_cmd_counts - self.last_cmd) * STALL_WINDOW
             feasible = min(cmd_travel, MAX_SLEW_PER_FRAME * STALL_WINDOW)
             moved = abs(self.hist[-1] - self.hist[0])
-            if feasible > 2.0 and moved < STALL_FRACTION * feasible:
+            # gap gate: a stall means the servo is held away from where it is
+            # commanded. Without this, micro-closing commands (sub-count
+            # jitter with the jaw already at target) pass the feasible floor
+            # while the deadband keeps the jaw static, and the guard latched
+            # phantom seats in open air on the scaled 224px policy (0/30,
+            # 0.4 N) -- the second phantom-seat mode after the slew one.
+            gap = jaw_meas_counts - jaw_cmd_counts     # meas above deeper cmd
+            if gap >= 3.0 and feasible > 4.0 and moved < STALL_FRACTION * feasible:
                 self.seat_jaw = jaw_meas_counts
         self.last_cmd = jaw_cmd_counts
         if self.seat_jaw is not None:
@@ -179,10 +186,10 @@ def main():
                 k = sum(o["placed"] for o in outs)
                 lo, hi = wilson(k, EPISODES)
                 pf = float(np.median([o["peak_force"] for o in outs]))
-                row = dict(arm=arm, crush=crush, guarded=guarded, success=k,
-                           episodes=EPISODES, ci=[lo, hi],
-                           crushed=sum(o["crushed"] for o in outs),
-                           dropped=sum(o["dropped"] for o in outs),
+                row = dict(arm=arm, crush=crush, guarded=guarded, success=int(k),
+                           episodes=EPISODES, ci=[float(lo), float(hi)],
+                           crushed=int(sum(o["crushed"] for o in outs)),
+                           dropped=int(sum(o["dropped"] for o in outs)),
                            peak_force_median=pf)
                 rows.append(row)
                 print(f"{arm:>10} {crush:6.0f} {'guard' if guarded else 'raw':>8} "
@@ -191,7 +198,7 @@ def main():
 
     Path(args.json).parent.mkdir(exist_ok=True)
     with open(args.json, "w") as fh:
-        json.dump(rows, fh, indent=2)
+        json.dump(rows, fh, indent=2, default=float)   # numpy scalars
     print(f"wrote {args.json}")
 
 
