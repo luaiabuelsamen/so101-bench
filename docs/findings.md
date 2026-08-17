@@ -804,20 +804,20 @@ controller ~3 episodes in 30 (the deleted-success accounting, now measured
 on a working reference). At 120 N: 23 vs 26. **The guard is compatible with
 competent closed-loop control.**
 
-**Boundary 1 (timing):** the open-loop clamp expert collapses 30/30 -> 0/30
-under the same guard -- its fixed-duration grasp window expires before the
-rate-limited jaw arrives. Any controller whose internal timing or
-thresholds were tuned on the unwrapped plant can break when wrapped: the
-expert's own commanded-travel stall test phantom-seats behind the rate
-limiter exactly the way the guard's first detector did behind fast
-policies. Same law, one layer down.
+**Integration note (not a finding; demoted per Rule 1c review):** the
+open-loop clamp expert collapses 30/30 -> 0/30 under the rate limiter
+because its fixed-duration grasp window expires before the slowed jaw
+arrives -- which is what a rate limiter does to open-loop timing, i.e.
+definitional, not a boundary. Kept as an integration checklist item:
+controllers wrapped by the guard must be closed-loop on contact, and any
+internal stall heuristics must use feasible (not commanded) travel.
 
-**Boundary 2 (entry transients):** at the 60 N tier the teacher fails raw
-AND guarded (3/30, ~25 crush latches from contact-entry spikes): an action
-filter has no authority over kinetic energy already in flight; it caps
-sustained squeeze, not first-contact impulse. This is the known limit of
-reactive schemes (cf. momentum-observer reflexes, which also act
-post-detection) and it bounds what any bus-side guard can claim.
+**Unimplemented feature (not a boundary; demoted per Rule 1c review):**
+at the 60 N tier the teacher fails raw AND guarded (3/30) on contact-entry
+transients. The standard fix is a soft-start / approach-velocity clamp
+before contact -- routine in industrial grippers -- which guard v4's
+closing-rate limit approximates but does not yet specialise near contact.
+Filed as a guard feature ticket, not written as a limit of action filters.
 
 **The policy ticket (NOT a finding):** the scaled delta policy under the
 v3 guard scored 0/30 while gripping ~40 N. Filed as a defect per Rule 1:
