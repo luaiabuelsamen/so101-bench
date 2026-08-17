@@ -1,87 +1,97 @@
-# The Servo Already Knows: Tracking Error as a Free Force Channel on Low-Cost Arms
+# Enforce, Don't Learn: Actuator-Level Runtime Safety for Learned Policies on Low-Cost Arms
 
-*Draft for a CoRL/RSS workshop submission (low-cost manipulation). Two pages,
-three figures, one pending hardware plot. The full lab record with every n and
-CI is `findings.md` in this repo.*
+*Draft for a workshop submission (low-cost manipulation / safe learning).
+Four pages, three figures + one hardware figure pending. Full lab record with
+every n and CI: `findings.md`.*
+
+## Premise, and the baseline question answered first
+
+Low-cost servo arms (SO-100/101 and kin) ship without force sensing, and the
+policies people train on them crush what they grasp. The STS3215 servo does
+expose `Present_Load` and `Present_Current` over the bus -- so why build
+anything on the tracking error `delta = goal - present`? Two reasons, one
+argued and one measured. Argued: **the public LeRobot corpus records neither
+load nor current** -- positions and goals only -- so `delta` is the only force
+channel recoverable from the thousands of datasets that already exist (we
+measured it across 555 of them: median 1.5 distinguishable levels during
+contact holds at factory gains). Measured: our calibration protocol
+(`hardware/staircase_cal.py`) logs `delta`, `Present_Load`, and
+`Present_Current` against a load cell in one session; the comparison figure is
+the first figure of this paper, and if the dedicated registers dominate on
+live hardware, the claim narrows honestly to the recorded-corpus and
+runtime-guard use cases below.
 
 ## Claim
 
-Position-servo arms with no force sensor still expose a force signal: the
-servo's own tracking error, `delta = goal − present` in encoder counts, which
-is already recorded in every LeRobot-format dataset as
-`action[t−1] − state[t]`. We characterise this channel end-to-end on a
-simulated SO-101 and show two deployable results: **(1)** a task-level force
-*resolution* requirement that tracks the physical safety margin — coarsen the
-channel past `margin / (N-per-count)` and crush-aware grasping collapses as a
-cliff — and **(2)** a ~30-line, bus-observable jaw guard that eliminated
-**96% of crush events (85/180 → 3/180)** across three behaviour-cloned
-policies with no retraining. Secondarily, adding the channel (or the raw
-action history it derives from) to a standard ACT policy is what makes grasp
-*commitment* learnable at all: without any such input, policies plateau at
-16–24% lift-commitment across three data recipes; with it, 47–76%, and a
-counterfactual intervention on the trained network (zeroing the input at a
-stall) collapses the planned lift 14×.
+**Safety properties of learned manipulation policies on low-cost arms should
+be enforced at the actuator layer, not learned.** We support this with a
+~30-line, bus-observable jaw guard -- stall-detected contact plus a bounded
+squeeze cap -- that eliminated **96% of crush events (85/180 → 3/180)** across
+three behaviour-cloned policies on identical paired episodes, with no
+retraining and no privileged state; and with the converse result that
+learning-side interventions do not deliver safety: adding the load channel to
+the policy's observation halves crush events at native resolution, the effect
+vanishes at 16-count resolution, and scaled, competent policies (57-63%
+success) crush *more*, because demonstration-faithful cloning reproduces the
+demonstrator's force distribution.
 
-## Method sketch
+## Positioning
 
-MuJoCo SO-101 with validated contact (teleop replays grasp 8/10), integer
-encoder quantisation on both observation and command, and a privileged
-scripted expert used three ways: demonstrator, force-oracle upper bound, and
-DAgger-style correction source. The channel was calibrated against
-ground-truth contact force (linear at 2.00 N/count seated & quasi-static,
-held-out RMSE 4.3 N over 4–78 N; non-informative while the object slides;
-meaningless during fast transport — deviations to 36 N p95), its seating
-detector evaluated against adversarial negatives (recall 1.00, grasp-ready
-precision 0.78: it detects *obstruction*, and jams obstruct like seats), and
-the physical safe-grip window measured without feedback (F_min = 20 N under a
-fixed 3.7 s transport protocol). All decision rules, thresholds, and stopping
-criteria were written before the corresponding results (repo:
-`docs/overnight_plan.md`).
+Sensorless force estimation is decades old -- generalized-momentum residual
+observers for collision detection (De Luca; Haddadin), disturbance observers,
+and current-based estimation on hobby-class actuators -- but that line
+targets estimation accuracy on torque-controlled or current-readable
+platforms. Runtime enforcement for learned policies is likewise established --
+shielding (Alshiekh et al., AAAI 2018), control barrier functions (Ames et
+al.), and the safe-learning-in-robotics survey of Brunke et al. -- but those
+shields assume a dynamics model or a constraint expressed in state space. Our
+contribution sits at the intersection the low-cost ecosystem actually
+occupies: no torque sensing, no calibrated dynamics, kilohertz-free bus
+telemetry only -- and shows a contact-safety shield needs nothing more than
+the position register history the cheapest servo already provides.
 
-## Results
+## Evidence (figures)
 
-**Fig 1 — the cliff tracks the margin.** Sweeping observation quantum × crush
-limit for the delta-regulated scripted controller: success is flat until the
-quantum approaches the safety margin, then collapses; the collapse point moves
-right as the margin widens (100/120/160 N). An input-ablation artifact would
-fall equally everywhere; this tracks physical headroom.
+1. **Foundation -- the channel is real but bounded** (calibration): linear at
+   2.00 N/count seated and quasi-static (held-out RMSE 4.3 N over 4-78 N),
+   non-informative during sliding, meaningless during fast transport;
+   seating detectable at recall 1.00 / adversarial precision 0.78. Pending
+   twin figure on hardware: `delta` vs `Present_Load` vs `Present_Current`
+   vs load cell.
+2. **Resolution requirement tracks the physical margin** (Fig 1): coarsening
+   the channel collapses crush-aware grasping as a cliff whose location moves
+   with the safety margin -- a design rule (`quantum < margin / N-per-count`)
+   rather than a benchmark number.
+3. **The guard** (Fig 2): 85/180 → 3/180 crushes across three checkpoints;
+   median peak force 33-131 N → 13-26 N. Measured caveats included: a force
+   cap deletes successes earned by over-gripping, and the stall test must
+   compare measured motion against servo-feasible (not commanded) travel or
+   fast-commanding policies trigger phantom seats.
+4. **Learning does not substitute** (Fig 3): the BC ladder 5% → 57-63%
+   success shows competence scaling with data and compute while crush rates
+   *worsen*; observation-side fixes are resolution-fragile; policies without
+   any action-history input never learn grasp commitment at all (16-24%
+   plateau, causally attributed by input counterfactual, 14x).
 
-**Fig 2 — safety as architecture.** The guard (stall-detected seating + a
-4-count squeeze cap, bus signals only) on three ACT policies, paired episodes:
-85/180 crush events raw → 3/180 guarded, median peak force 33–131 N → 13–26 N.
-Caveats measured, not hidden: a force cap also removes successes a sloppy
-policy earned by over-gripping, and the stall test must compare measured
-motion against *servo-feasible* travel or fast-commanding policies trigger
-phantom seats.
+## Screening protocol (secondary contribution)
 
-**Fig 3 — the channel is what makes commitment learnable.** BC ladder under
-identical architecture: 5% → 17% (recovery kicks) → 21% (grip-depth
-diversity) → 57–63% (600 demos, 224 px, 50k steps), reaching the deployable
-scripted band (expert + realistic pose noise: 47–67%). Policies *without*
-action-history input stayed at ≤24% commitment through every data recipe; the
-teacher-forcing / counterfactual autopsy locates the failure at observability,
-not optimisation. At scale, explicit `delta` and raw `a[t−1]` are
-statistically indistinguishable (57% vs 60%, 2 seeds — form-vs-information
-unresolved at this n; the *information* being necessary is the supported
-claim).
-
-**[Fig 4 — pending: real-arm calibration.]** Goal-position staircase into a
-load cell on a physical STS3215 (`hardware/staircase_cal.py`, ~20 min):
-N-per-count, linearity range, saturation. Until this lands, every newton in
-this paper inherits the simulator's contact model — stated as the primary
-limitation, not a footnote.
+Our rigid-block negative control showed a standard pick-place task cannot
+detect force feedback at all (blind clamp ties oracle, 118/120 paired ties).
+We propose oracle-first screening -- run blind/proxy/oracle scripted experts
+before any training -- as a cheap admission test for any benchmark claiming to
+study a sensing modality.
 
 ## Limitations
 
-Simulation contact stiffness (elliptic cone, `impratio=10`, box pads) sets
-the 2.00 N/count constant; the real servo adds PWM deadband and
-load-dependent stiction. Two seeds per learned arm bound only coarse claims.
-The guard's stall detector inherits a measured 0.78 precision against
-jams/topping. One gripper, one object family, one task.
+All force constants currently inherit the simulator's contact model; the
+hardware calibration (in progress) either transfers them or replaces them --
+a negative transfer result would itself be the first honest measurement of
+this channel. Two seeds per learned arm. One gripper, one object family. The
+guard's precision against jams is 0.78 and inherited by everything above it.
 
-## Reproducibility
+## Six-week plan to submission
 
-Everything in this repo: environment, expert, all experiment scripts,
-pre-registrations, result JSONs with CIs, and the figures above
-(`figures/paper/`). Cloud training reproduces via `scripts/modal_train.py`
-(~$26 on H100s for the full grid).
+W1: three-channel load-cell calibration on a real STS3215. W2: literature
+positioning pass (20 papers, one page). W3-4: guard on the real arm, A/B
+video against a deliberately over-gripping policy. W5-6: 4-page writeup,
+three figures, workshop submission.

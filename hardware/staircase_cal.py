@@ -1,4 +1,17 @@
-"""Real-arm force calibration: N-per-count on an actual STS3215.
+"""Real-arm force calibration: delta vs Present_Load vs Present_Current.
+
+THE PREMISE QUESTION THIS ANSWERS. The STS3215 already reports load and
+current over the bus, so the first reviewer question is: why estimate force
+from tracking error at all? Two candidate answers, one argued and one
+measured. Argued: the public LeRobot corpus records only positions and goals
+-- neither load nor current -- so `delta` is the only force channel
+recoverable from the thousands of datasets that already exist (this repo's
+corpus study measured exactly that channel across 555 of them). Measured:
+THIS script logs all three channels against a load cell simultaneously, so
+the same 20-minute session yields the delta-vs-Load-vs-Current comparison --
+linearity, noise floor, and resolution of each. If Present_Load beats delta
+on live hardware, that is the finding, and delta's claim narrows to the
+recorded-corpus and guard use cases.
 
 THE POINT. Every envelope number in this project (2.00 N/count, the ±9.2 N
 budget, F_min = 20 N, the cliff locations) currently inherits MuJoCo's contact
@@ -76,12 +89,23 @@ def main():
             bus.write("Goal_Position", args.joint, goal, normalize=False)
             time.sleep(args.hold_s)
             present = int(bus.read("Present_Position", args.joint, normalize=False))
-            reading = input(f"step {k+1}: goal {goal}, present {present}, "
-                            f"delta {goal - present:+d} | scale grams> ").strip()
+
+            def reg(name):
+                try:
+                    return int(bus.read(name, args.joint, normalize=False))
+                except Exception:
+                    return None
+
+            load, current = reg("Present_Load"), reg("Present_Current")
+            reading = input(
+                f"step {k+1}: goal {goal} present {present} "
+                f"delta {goal - present:+d} load {load} curr {current} "
+                f"| scale grams> ").strip()
             if reading.lower() in ("x", "q", ""):
                 break
             rows.append(dict(step=k + 1, goal=goal, present=present,
-                             delta=goal - present,
+                             delta=goal - present, present_load=load,
+                             present_current=current,
                              newtons=float(reading) / 1000.0 * G))
         out = Path(__file__).parent / f"staircase_{args.joint}_{args.direction}.json"
         out.write_text(json.dumps(rows, indent=2))
@@ -100,8 +124,15 @@ def main():
                     break
             a, b = np.polyfit(d[rising], f[rising], 1)
             rmse = float(np.sqrt(np.mean((a * d[rising] + b - f[rising]) ** 2)))
-            print(f"N per count (linear range): {a:.3f}  bias {b:+.2f} N  "
+            print(f"delta:  {a:.3f} N/count  bias {b:+.2f} N  "
                   f"RMSE {rmse:.2f} N over {int(rising.sum())} points")
+            for chan in ("present_load", "present_current"):
+                v = np.array([r[chan] for r in rows], float)
+                if np.isfinite(v).all() and v[rising].std() > 0:
+                    aa, bb = np.polyfit(v[rising], f[rising], 1)
+                    rr = float(np.sqrt(np.mean((aa * v[rising] + bb - f[rising]) ** 2)))
+                    print(f"{chan}: {aa:.4f} N/unit  RMSE {rr:.2f} N  "
+                          f"(vs delta RMSE {rmse:.2f})")
             print(f"sim value was 2.00 N/count -- ratio {a / 2.00:.2f}x")
             if (~rising).any():
                 print(f"saturation onset around delta = {d[rising][-1]:.0f} counts, "
