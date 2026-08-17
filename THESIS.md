@@ -11,7 +11,7 @@ that does neither gets killed, however fun.
 
 | project | argues | status |
 |---|---|---|
-| Corpus regrasp study (delta at grasp time vs outcome across public datasets) | for: the latent is recoverable retroactively, ecosystem-wide | **next build** (script drafted; paused for reading week) |
+| Corpus regrasp study (delta at grasp time vs outcome across public datasets) | for: the latent is recoverable retroactively, ecosystem-wide | **ACTIVE — this week's kill test** (per gap.md v2 review: experiment 1, before the grid and the bench) |
 | BC ladder + autopsy (5%→60% from one observability fix; 14× counterfactual) | for: the causal core | done; ship it |
 | base_hist result | complicates: raw action history suffices at scale — the *form* is open, and the copycat-shortcut literature bears on it directly | done; framing depends on reading |
 | Jaw guard (96% crush elimination, bus-only) | for: the same latent, enforced instead of learned | done; deployable byproduct |

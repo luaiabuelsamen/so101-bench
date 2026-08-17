@@ -37,18 +37,40 @@ demonstrator's force distribution.
 
 ## Positioning
 
+*(post reading pass; verified sources in `docs/reading_notes/`, gap analysis
+in `docs/gap.md`)*
+
 Sensorless force estimation is decades old -- generalized-momentum residual
-observers for collision detection (De Luca; Haddadin), disturbance observers,
-and current-based estimation on hobby-class actuators -- but that line
-targets estimation accuracy on torque-controlled or current-readable
-platforms. Runtime enforcement for learned policies is likewise established --
-shielding (Alshiekh et al., AAAI 2018), control barrier functions (Ames et
-al.), and the safe-learning-in-robotics survey of Brunke et al. -- but those
-shields assume a dynamics model or a constraint expressed in state space. Our
-contribution sits at the intersection the low-cost ecosystem actually
-occupies: no torque sensing, no calibrated dynamics, kilohertz-free bus
-telemetry only -- and shows a contact-safety shield needs nothing more than
-the position register history the cheapest servo already provides.
+observers detect collisions from identified dynamics (De Luca 2005; Haddadin
+T-RO 2017), and torque-from-(command, position) exists even for hobby servos
+(Hwang et al., Sensors 2018 -- the raw idea's prior art, which we cite and
+extend with a calibrated validity envelope). The current wave is converging
+on our premise: NeuralActuator (RSS 2026, Outstanding Systems Paper) learns
+per-actuator external-force models on this same servo class (0.36-0.73 N
+MAE) and already demonstrates on hardware that a force-aware BC policy beats
+position-only control -- so "force input improves BC on this servo" is owned,
+and we do not claim it. What that line requires is live load/current
+telemetry plus an instrumented calibration rig; FACTR 2 (2026) likewise
+feeds estimated external torque into BC via a trained estimator over current
+telemetry. Neither channel exists in the recorded public corpus -- our claim
+is confined to the strip they leave open (no currents, no calibration,
+retroactive on recorded data) -- and that line never addresses enforcement.
+
+Runtime enforcement for learned policies is likewise canonical -- Simplex,
+shielding (Alshiekh et al., AAAI 2018), CBFs (Ames et al.), the Brunke et
+al. survey -- but every published enforcing filter consumes an identified
+model, a ground-truth state estimate, a perception stack, or an F/T sensor,
+and the recent manipulation-specific safety layers need kilohertz
+reachability, URDF-plus-scene collision oracles, or GPU-scale world models.
+None targets crush of the grasped object (the one hazard catalog that covers
+manipulation explicitly excludes non-collision failures), and none reports
+the successes its interventions delete. The ecosystem's only shipped guard,
+LeRobot's `max_relative_target`, is command-side, contact-blind, and off by
+default. Our contribution sits exactly in that hole: **a Simplex-style
+runtime assurance whose monitor watches bus telemetry instead of modeled
+state** -- the position-register history the cheapest servo already provides
+-- enforcing a constraint no published filter family covers, with paired
+accounting of the successes the cap deletes.
 
 ## Evidence (figures)
 

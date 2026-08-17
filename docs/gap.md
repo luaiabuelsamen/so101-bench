@@ -1,93 +1,93 @@
-# Here's what's new — the gap statement
+# The gap statement
 
-*Synthesis of the four-thread reading pass (58 papers read/verified;
-`docs/reading_notes/`). One page. Written 16 Aug 2026, before any further
-building.*
+*v2, after external review of v1. One claim, one page. Sources:
+`docs/reading_notes/` (58 papers); the two load-bearing quotes below were
+re-verified against the primary sources directly, not the reading agents'
+notes.*
 
-## What the literature already has
+## The gap, in one sentence
 
-**History in IL (A):** the canon never says history hurts — Wen's own copycat
-paper shows history-BC beating single-frame in 5/6 of its environments; the
-shortcut is a *tax*, with a measured signature (validation loss improves,
-rollouts degrade, action-predictability exceeds the expert's). Three failure
-regimes are named: shortcut mimicry (Wen/de Haan), latching on unobserved
-contexts (Swamy, NeurIPS 2022), and episodic under-use (Past-Token
-Prediction). **Sensorless force (B):** torque-from-(command, position) on RC
-servos exists (Hwang 2018); the 2025–26 wave (NeuralActuator — 0.36–0.73 N
-MAE on our very servo; FACTR 2 — force-from-currents+tracking-error into BC,
-+17% on commodity arms) is converging on "force is latent in shipped
-hardware." **Shields (C):** enforce-don't-learn is canonical
-(Simplex→RTA→shielding), but every published enforcing filter consumes
-models, state estimates, perception, or F/T sensing; none addresses gripper
-crush; none audits the successes it deletes. **The stacks (D):** all seven
-dominant open policies observe at most current joint positions; ACT *states*
-that force "is implicitly defined by the difference between" leader and
-follower positions and then observes only one operand; LeRobot reads
-`Present_Position` while its own table defines `Present_Load`; Robotiq ships
-grasp-loss detection computed from exactly sign(goal−present)+current.
+**The position-only logs the field already ships contain a sufficient force
+observation — here is the proof, the envelope, and the ecosystem-wide
+measurement.**
 
-## The gap, precisely
+Everything in this repo is a section of that sentence: the calibration is
+"sufficient... observation" made quantitative, the BC ladder and autopsy are
+the proof, the resolution cliff is the envelope, the corpus study is the
+ecosystem-wide measurement, and the guard is the corollary (the same
+observation enforced rather than learned).
 
-1. **An unnamed fourth regime in the history-in-IL taxonomy:** history as a
-   *one-step physical measurement of a fast exogenous latent* — the servo
-   loop's rejection of the command IS a force reading. Every published
-   "history necessary" construction is an occlusion, a hidden velocity, or an
-   episodic fact; none is an actuator latent. Our result sits in this cell,
-   and by de Haan's own diagnostic (teacher-forcing unchanged, rollouts 10×
-   up — the mirror of the confound signature) it is not the shortcut regime.
-2. **Retroactivity, claimed by no one:** the channel is recoverable from the
-   position-only logs every public LeRobot dataset already ships. NeuralActuator
-   needs the load register; FACTR 2 needs current telemetry and calibration;
-   neither exists in the corpus. This claim has a closing window.
-3. **A shield that consumes only bus telemetry** — no model, no state
-   estimator, no sensor — enforcing a constraint (grasp crush) that no
-   published filter family covers, with paired accounting of deleted
-   successes, which no published shield reports.
-4. **The connection itself:** our point exists in the literature as two
-   disconnected halves — ACT's sentence and FACTR 2's estimator — and nobody
-   has joined them: *the difference the field names and then discards is a
-   sufficient observation, retroactively, at zero hardware cost.*
+## Defaults, not representation
 
-## The dangerous neighbours, and the line against each
+The anticipated kill-shot: "this is a POMDP with a one-step sufficient
+statistic; set `n_obs_steps=2` and any model recovers it — your own
+base_hist result proves it." Correct — and that is the claim. Nothing here
+is about architectures or a new representation; it is that **every stock
+stack observes one operand of a subtraction the field itself names.** The
+two operands, verified at the source:
 
-- **NeuralActuator** (RSS'26): better accuracy, same servo — but requires
-  live load telemetry + an instrumented training rig; cannot touch the corpus.
-- **FACTR 2**: owns "force input improves BC on commodity arms" — but via a
-  trained estimator on current telemetry; never engages the copycat
-  literature; not retroactive. (Steal: its free-motion self-labeling trick.)
-- **Haddadin/De Luca residual line**: needs identified dynamics; targets
-  link/human collision, not grasped-object crush (their own footnote flags
-  fragile objects and moves on); never wraps a learned policy.
-- **Hwang 2018**: the raw idea's prior art; cite and supersede with the
-  calibrated envelope + the design rule.
+- ACT, §IV (verbatim, checked against the paper): *"It is important to use
+  the leader joint positions instead of the follower's, because the amount of
+  force applied is implicitly defined by the difference between them, through
+  the low-level PID controller."* The force channel is deliberately kept in
+  the action labels — and never provided as an observation; the reference
+  implementation raises on `n_obs_steps != 1`.
+- LeRobot (verified in source, May-2026 tree): the Feetech table defines
+  `Present_Load` (addr 60) and `Present_Current` (addr 69); upstream
+  `get_observation()` reads only `Present_Position`. (Our local checkout
+  carries an uncommitted patch adding `.load` to the observation — that diff
+  is the PR this project intends to ship.)
 
-## What this retires in our own claims
+A design default of the ecosystem, not a taxonomy cell. The "fourth regime"
+IL-theory framing of v1 is real but is **the next paper**, not this one; its
+instrument (a Wen-style copycat probe: does the policy track `a[t]` or
+`a[t-1]` at the frames where the expert breaks jaw autocorrelation) is
+written and smoke-tested (`scripts/probe_copycat.py`), and parks until then.
 
-Accuracy competitiveness (NeuralActuator wins on numbers); the guard as a
-*concept* (thresholded residual reactions are 2005); "the field ignores
-history without justification" (ACT cites causal confusion; DP measured
-history hurting — the field's actual error is conflating *history* with
-*load*).
+## Neighbours, and the one defensible strip
 
-## The experiments the gap implies, ranked
+- **NeuralActuator (RSS 2026, Outstanding Systems Paper; code + data
+  released July 2026).** Not merely an accuracy neighbour: it already
+  reports hardware BC comparisons where a force-aware policy beats
+  position-only control. "Force input improves BC on this servo class" is
+  therefore **owned, by an award paper**. What it needs and we don't: live
+  load/current telemetry and an instrumented calibration rig. Our strip is
+  exactly *no currents, no calibration, retroactive on the recorded corpus*
+  — and nothing else.
+- **FACTR 2 (2026):** estimated external torque into BC on commodity arms —
+  same strip left open (estimator needs current telemetry + calibration;
+  nothing retroactive). Steal its free-motion self-labeling trick.
+- **Hwang 2018:** prior art for raw (command, position) → torque on hobby
+  servos; cite, then supersede with the validity envelope.
+- **Shields (De Luca/Haddadin residuals; Simplex/RTA/shielding/CBF):** every
+  published enforcing filter consumes a model, a state estimate, perception,
+  or an F/T sensor; none covers grasped-object crush; none audits deleted
+  successes. The guard keeps this unclaimed position; LeRobot's only shipped
+  guard (`max_relative_target`) is command-side, contact-blind, off by
+  default.
 
-1. **Wen's predictability probe on our existing checkpoints** (immediate,
-   cheap): is base_hist copycatting? Our regime claim predicts no.
-2. **Channel-content substitution grid**: {base, +a[t−1], +delta,
-   +privileged force, +both} × {contact task, reach-only control}. Thesis
-   predicts a[t−1]'s gain vanishes under privileged force; latching predicts
-   it persists. This is the paper's decisive figure.
-3. **Corpus regrasp study** (parked script): the retroactivity claim made
-   empirical, ecosystem-wide.
-4. **Hardware calibration** (blocking, script ready): delta vs Present_Load
-   vs Present_Current vs load cell — with Hwang and NeuralActuator now the
-   explicit comparison rows.
+**The window closes from both sides.** NeuralActuator's released SO-101
+teleop stack logs current, and any upstream merge of a load-reading
+observation (our own drafted patch included) ends the era of position-only
+logs. The moat is the *existing* corpus — thousands of datasets whose only
+force channel, forever, is delta. The retroactive claim does not expire;
+the priority to state it first does.
 
-## The sentence, survived and sharpened
+## The week, in the order the thesis demands
 
-The reading pass confirms the thesis is early-consensus (the field is
-arriving), which converts it from a bet into a race: the defensible, unclaimed
-ground is **retroactive observability of actuator latents in the existing
-corpus, the honest validity envelope, the margin-tracking design rule, and
-telemetry-only enforcement** — and the deadline is set by how fast the
-NeuralActuator/FACTR line reaches the same corpus insight.
+1. **Corpus study** (`scripts/corpus_delta_outcome.py`, unparked — the kill
+   test). Delta at first-close vs regrasp across public SO-101 datasets.
+   Cheapest experiment we have (no training), and the one the headline
+   sentence lives or dies on. If delta at contact does not separate outcomes
+   in the wild, the framing dies this week, at CPU prices, as it should.
+2. **Channel-content substitution grid** {base, +a[t−1], +delta, +privileged
+   force} × {contact task, reach-only control}: does the gain track the
+   physical latent (vanishes under privileged force) or the history channel
+   (persists)?
+3. **Hardware calibration** (user's bench session; script ready): delta vs
+   `Present_Load` vs `Present_Current` vs load cell, with Hwang and
+   NeuralActuator as explicit comparison rows.
+
+Retired from v1: four parallel "gaps" (collapsed to the sentence above);
+the taxonomy claim as this paper's frame; any accuracy competition with
+NeuralActuator; the copycat probe as this week's work.
