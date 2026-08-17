@@ -9,3 +9,5 @@ data/
 outputs/
 *.mp4
 vendor/
+checkpoints/
+modal_outputs/

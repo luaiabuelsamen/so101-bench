@@ -1,5 +1,14 @@
 # so101-bench
 
+**Headline results:** behaviour cloning on this task went from 5% → **57–63%**
+place rate by (1) adding the servo's own tracking error to the observation,
+(2) fixing two measured data-coverage gaps (recovery kicks, grip-depth
+diversity), and (3) running the standard training recipe at scale. A raw
+action-history control matches the explicit channel at scale — the missing
+ingredient was *information*, not representation — and a 30-line bus-observable
+guard eliminates 96% of crush events on any policy without retraining. Full
+evidence chain in `docs/findings.md`; every claim has an n and a CI.
+
 A MuJoCo pick-and-place environment for the low-cost **SO-100 / SO-101** arm,
 with domain randomisation, a scripted expert, and LeRobot-schema data
 collection — built around the proprioceptive force channel that a
@@ -173,3 +182,15 @@ replaying its recorded demonstrations (8/10 episodes place the block). Three
 properties make grasping possible here and are absent from a URDF-derived
 model: an elliptic friction cone at `impratio=10`, explicit thin-box finger
 pads, and collision meshes separate from visual meshes.
+
+
+## Reproducing the cloud runs
+
+`scripts/modal_train.py` expects `vendor/lerobot/` (gitignored): copy your
+lerobot checkout (`pyproject.toml`, `README.md`, `src/`) there. This project
+pins the tree this repo was developed against (0.3.4-era API: normalisation
+handled outside policies; see `scripts/train_act.py`).
+
+## License
+
+Apache-2.0.
