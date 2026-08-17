@@ -1,0 +1,522 @@
+[
+  {
+    "name": "00ri__so100_battery_bin_center",
+    "episodes": 39,
+    "success_rate": 0.6410256410256411,
+    "seated_rate": 1.0,
+    "cohen_d": 0.7764737395578756,
+    "d_ci": [
+      0.024980388212517544,
+      1.8415850428215708
+    ],
+    "delta_succ_median": 50.9005859375,
+    "delta_fail_median": 49.839226108127164
+  },
+  {
+    "name": "1909398036ljy__so100_test",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "1909398036ljy__so100_test1",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "356c__so100_nut_test_1",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "AMRUBARD__so100_make_coffeetest6",
+    "episodes": 22,
+    "success_rate": 0.2727272727272727,
+    "seated_rate": 0.8181818181818182,
+    "cohen_d": -0.7493209459302773,
+    "d_ci": [
+      -1.234317651571914,
+      -0.4240960891258907
+    ],
+    "delta_succ_median": 7.938048129611546,
+    "delta_fail_median": 9.381849892934163
+  },
+  {
+    "name": "Ayush-Sharan-1__so100_ticTacToe_v2",
+    "episodes": 40,
+    "success_rate": 0.725,
+    "seated_rate": 1.0,
+    "cohen_d": -15.771070126744734,
+    "d_ci": [
+      -41.19845251519408,
+      -11.716538147971518
+    ],
+    "delta_succ_median": 4.7048010932074655,
+    "delta_fail_median": 83.23253038194446
+  },
+  {
+    "name": "BobBobbson__so100_First_Gripper_Test",
+    "episodes": 29,
+    "success_rate": 0.27586206896551724,
+    "seated_rate": 0.9655172413793104,
+    "cohen_d": -0.7989615552722871,
+    "d_ci": [
+      -2.334518086745547,
+      0.14103054935315298
+    ],
+    "delta_succ_median": 17.0839138454861,
+    "delta_fail_median": 26.45100911458333
+  },
+  {
+    "name": "Cornito__so101_chess17",
+    "episodes": 37,
+    "success_rate": 0.21621621621621623,
+    "seated_rate": 0.972972972972973,
+    "cohen_d": -0.5878698963760736,
+    "d_ci": [
+      -1.1863444144483206,
+      -0.13851498005725335
+    ],
+    "delta_succ_median": 29.28425761328803,
+    "delta_fail_median": 36.63237169053819
+  },
+  {
+    "name": "Cornito__so101_test3",
+    "episodes": 39,
+    "multigrasp_task": true
+  },
+  {
+    "name": "Dangvi__soarm100_data",
+    "episodes": 38,
+    "success_rate": 1.0,
+    "seated_rate": 0.9736842105263158
+  },
+  {
+    "name": "Dangvi__soarm100_dataset",
+    "episodes": 38,
+    "success_rate": 1.0,
+    "seated_rate": 0.9736842105263158
+  },
+  {
+    "name": "Fergusonf__so100_test",
+    "episodes": 20,
+    "success_rate": 0.7,
+    "seated_rate": 1.0,
+    "cohen_d": 0.24484333191571794,
+    "d_ci": [
+      -0.6714575243982079,
+      1.0815342434366166
+    ],
+    "delta_succ_median": 107.78996447457209,
+    "delta_fail_median": 106.46565214792886
+  },
+  {
+    "name": "Haribot099__so101_60",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "HelloCephalopod__block_pickup_14",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "HuoYixiao__so101_test",
+    "episodes": 40,
+    "success_rate": 0.95,
+    "seated_rate": 1.0
+  },
+  {
+    "name": "JimmyPeng02__so100_test_6",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "LeRobot-worldwide-hackathon__188-DGT01-fayri5",
+    "episodes": 35,
+    "multigrasp_task": true
+  },
+  {
+    "name": "LeRobot-worldwide-hackathon__190-RecycloBots-recyclobots",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "MsJNeko__so101_prac2",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "Mwuqiu__so100_0408",
+    "episodes": 20,
+    "multigrasp_task": true
+  },
+  {
+    "name": "Ofiroz91__eval_so_100_cube2bowl",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "Qiushuang__so100_test",
+    "episodes": 20,
+    "multigrasp_task": true
+  },
+  {
+    "name": "ReubenLim__so101_ball_in_cup",
+    "episodes": 39,
+    "success_rate": 0.6153846153846154,
+    "seated_rate": 1.0,
+    "cohen_d": -1.785756088992151,
+    "d_ci": [
+      -3.499743823732691,
+      -1.0534591919934588
+    ],
+    "delta_succ_median": 7.241866726345486,
+    "delta_fail_median": 66.82792968749999
+  },
+  {
+    "name": "Rorschach4153__so101_30_1",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "Rorschach4153__so101_30_fold",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "Rorschach4153__so101_60_new",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "SGQA__so100_test",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "Selinaliu1030__egg_0806",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "Stevenyu8888__so101_3d_grab",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "TzuShian__so100_chess_test2",
+    "episodes": 30,
+    "multigrasp_task": true
+  },
+  {
+    "name": "Waykzen__raju",
+    "episodes": 21,
+    "multigrasp_task": true
+  },
+  {
+    "name": "allenchienxxx__so100_block_bin",
+    "episodes": 40,
+    "success_rate": 0.125,
+    "seated_rate": 1.0,
+    "cohen_d": -0.07388917334484378,
+    "d_ci": [
+      -0.7881112006324826,
+      0.5808376474723641
+    ],
+    "delta_succ_median": 124.64369108412001,
+    "delta_fail_median": 123.04232389662
+  },
+  {
+    "name": "apayan__so100_ball8",
+    "episodes": 39,
+    "multigrasp_task": true
+  },
+  {
+    "name": "apayan__so100_key6",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "bjb7__so101_berm_build_merged",
+    "episodes": 28,
+    "multigrasp_task": true
+  },
+  {
+    "name": "bjb7__so101_berm_build_test_1",
+    "episodes": 28,
+    "multigrasp_task": true
+  },
+  {
+    "name": "cadene__so100_5_lego_test",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "cyoung96__so100_test",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "dongseon__so100_04261",
+    "episodes": 20,
+    "multigrasp_task": true
+  },
+  {
+    "name": "drjaisree25__carrot_data",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "dsfsg__grasp_pens",
+    "episodes": 20,
+    "multigrasp_task": true
+  },
+  {
+    "name": "edgarkim__so100_test_edgar_block",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "guanfengliu__grab_brush_diff_bin_orient2",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "isadev__bougies2",
+    "episodes": 40,
+    "success_rate": 0.7,
+    "seated_rate": 1.0,
+    "cohen_d": 1.4573135061291256,
+    "d_ci": [
+      0.5835707001418815,
+      3.379540968695666
+    ],
+    "delta_succ_median": 54.26993204752604,
+    "delta_fail_median": 33.008084275987414
+  },
+  {
+    "name": "jdgalviss__so101_test_bottle",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "jiajun001__eraser00_3",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "jiajun001__put13-2",
+    "episodes": 30,
+    "success_rate": 0.6,
+    "seated_rate": 0.4,
+    "cohen_d": -1.30585243340023,
+    "d_ci": [
+      -2.3111172186803417,
+      -0.6201251627946711
+    ],
+    "delta_succ_median": 25.941283718744913,
+    "delta_fail_median": 52.357555474175356
+  },
+  {
+    "name": "joaoocruz00__so100_makeitD1",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "juni3227__so100_test_cap01",
+    "episodes": 29,
+    "multigrasp_task": true
+  },
+  {
+    "name": "kaiserbuffle__hanoi",
+    "episodes": 27,
+    "multigrasp_task": true
+  },
+  {
+    "name": "kaiserbuffle__hanoiv2",
+    "episodes": 20,
+    "multigrasp_task": true
+  },
+  {
+    "name": "kantine__kapla_tower_2_expert",
+    "episodes": 20,
+    "multigrasp_task": true
+  },
+  {
+    "name": "kantine__kapla_tower_3_expert",
+    "episodes": 31,
+    "multigrasp_task": true
+  },
+  {
+    "name": "kevin-nd__so100_test_2",
+    "episodes": 20,
+    "multigrasp_task": true
+  },
+  {
+    "name": "love3165303__so100_pick_all_lego",
+    "episodes": 24,
+    "multigrasp_task": true
+  },
+  {
+    "name": "love3165303__so100_pick_multi_tape1",
+    "episodes": 33,
+    "multigrasp_task": true
+  },
+  {
+    "name": "lt-s__so100_train_move_six_blocks_tray_to_matching_dishes_flip",
+    "episodes": 20,
+    "multigrasp_task": true
+  },
+  {
+    "name": "masato-ka__so100_lego_sort",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "masato-ka__stacking_block_wrist",
+    "episodes": 30,
+    "multigrasp_task": true
+  },
+  {
+    "name": "mfyu__so101_white_box_green_nums_20_0729",
+    "episodes": 20,
+    "success_rate": 0.35,
+    "seated_rate": 0.95,
+    "cohen_d": -0.04907474337704159,
+    "d_ci": [
+      -0.9185196300623919,
+      0.9823130142138259
+    ],
+    "delta_succ_median": 51.87848578559028,
+    "delta_fail_median": 69.59294704861111
+  },
+  {
+    "name": "paszea__so100_lego_mix",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "paszea__so100_whale_2",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "pierfabre__CowCleanRandom",
+    "episodes": 22,
+    "success_rate": 0.09090909090909091,
+    "seated_rate": 0.9545454545454546
+  },
+  {
+    "name": "pierfabre__sheep",
+    "episodes": 40,
+    "success_rate": 0.15,
+    "seated_rate": 1.0,
+    "cohen_d": 0.286954945383105,
+    "d_ci": [
+      -0.12874923274670252,
+      0.877128179056938
+    ],
+    "delta_succ_median": 121.84709048800997,
+    "delta_fail_median": 117.62478527492947
+  },
+  {
+    "name": "pranavsaroha__so100_med_cubes_0608",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "s20000s__soarm100_data",
+    "episodes": 38,
+    "success_rate": 1.0,
+    "seated_rate": 0.9736842105263158
+  },
+  {
+    "name": "samanthalhy__so100_herding_1",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "samsitol__so100_PnPblock",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "samsitol__so100_boarduni",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "sergiov2000__so100_lego_and_ball_40_ball",
+    "episodes": 40,
+    "success_rate": 0.75,
+    "seated_rate": 1.0,
+    "cohen_d": -0.3668279735074884,
+    "d_ci": [
+      -1.451021913374499,
+      0.4443290414015359
+    ],
+    "delta_succ_median": 25.108562236362033,
+    "delta_fail_median": 34.529901123046876
+  },
+  {
+    "name": "sergiov2000__so100_lego_leader_40",
+    "episodes": 40,
+    "success_rate": 0.55,
+    "seated_rate": 1.0,
+    "cohen_d": -0.8103809683465625,
+    "d_ci": [
+      -1.5932983869648885,
+      -0.2001455914072675
+    ],
+    "delta_succ_median": 62.525584242079,
+    "delta_fail_median": 82.02193586561415
+  },
+  {
+    "name": "shenjianliang__so101_test",
+    "episodes": 40,
+    "multigrasp_task": true
+  },
+  {
+    "name": "sincostangerines__purple_dice",
+    "episodes": 30,
+    "success_rate": 0.6333333333333333,
+    "seated_rate": 0.8333333333333334,
+    "cohen_d": 0.37498222519486246,
+    "d_ci": [
+      -0.392580549540866,
+      1.3922138070224428
+    ],
+    "delta_succ_median": 50.23960961235894,
+    "delta_fail_median": 49.97170075310601
+  },
+  {
+    "name": "sincostangerines__six_dice",
+    "episodes": 30,
+    "success_rate": 0.9666666666666667,
+    "seated_rate": 0.9333333333333333
+  },
+  {
+    "name": "tenkau__SO101-Stack3Blocks",
+    "episodes": 40,
+    "success_rate": 0.85,
+    "seated_rate": 1.0,
+    "cohen_d": -20.1137856782616,
+    "d_ci": [
+      -70.54826715055765,
+      -14.357903087690685
+    ],
+    "delta_succ_median": 8.586961025661893,
+    "delta_fail_median": 142.52533637152777
+  },
+  {
+    "name": "tenkau__so101_color_block",
+    "episodes": 34,
+    "multigrasp_task": true
+  },
+  {
+    "name": "wonhchoi__so100_test",
+    "episodes": 40,
+    "success_rate": 0.0,
+    "seated_rate": 1.0
+  }
+]

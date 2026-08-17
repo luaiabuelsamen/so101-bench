@@ -204,10 +204,18 @@ def analyse_dataset(root: str, q_known: float | None = None):
 
 
 def fetch_more(raw_root: str, quanta: dict[str, float], have: set[str],
-               want: int, free_gb_floor: float = 3.0):
-    """Download parquet+meta only for candidate repos, biggest first."""
+               want: int, frames: dict[str, int] | None = None,
+               free_gb_floor: float = 3.0):
+    """Download parquet+meta only for candidate repos, biggest first.
+
+    Candidates are ordered by recorded frame count (statistical power),
+    chosen before any outcome is seen -- the MIN_EPISODES/MIN_CLASS gates
+    eat small datasets, so alphabetical order wastes downloads.
+    """
     from huggingface_hub import snapshot_download
-    cands = sorted(quanta.keys() - have)
+    frames = frames or {}
+    cands = sorted(quanta.keys() - have,
+                   key=lambda n: -frames.get(n, 0))
     got = 0
     for name in cands:
         if got >= want:
@@ -234,21 +242,31 @@ def figure(rows, out_png: Path):
     import matplotlib.pyplot as plt
 
     rows = sorted(rows, key=lambda r: r["cohen_d"])
-    fig, ax = plt.subplots(figsize=(7, 0.42 * len(rows) + 1.8))
-    for k, r in enumerate(rows):
+    fig, ax = plt.subplots(figsize=(8, 0.42 * len(rows) + 1.8))
+    XLIM = 4.0                        # display clip; stereotyped-success
+    for k, r in enumerate(rows):      # datasets have |d| in the tens
         lo, hi = r["d_ci"]
-        ax.plot([lo, hi], [k, k], color="#2b7bba", lw=1.5)
-        ax.scatter([r["cohen_d"]], [k], s=18 + r["episodes"] * 0.6,
-                   color="#2b7bba", zorder=3)
+        d = r["cohen_d"]
+        if d < -XLIM:
+            ax.scatter([-XLIM * 0.97], [k], s=45, marker="<",
+                       color="#2b7bba", zorder=3)
+            ax.annotate(f"d={d:.1f}", (-XLIM * 0.94, k), fontsize=7,
+                        va="center")
+        else:
+            ax.plot([max(lo, -XLIM), min(hi, XLIM)], [k, k],
+                    color="#2b7bba", lw=1.5)
+            ax.scatter([d], [k], s=18 + r["episodes"] * 0.6,
+                       color="#2b7bba", zorder=3)
     ax.axvline(0, color="gray", lw=0.8)
     ax.axvline(0.5, color="green", ls="--", lw=0.8,
                label="pre-registered d = 0.5")
+    ax.set_xlim(-XLIM, XLIM)
     ax.set_yticks(range(len(rows)),
                   [r["name"][:30] for r in rows], fontsize=7)
     ax.set_xlabel("Cohen's d: delta-at-seat, success vs failure (bootstrap 95% CI)")
     hits = sum(r["cohen_d"] > 0.5 for r in rows)
-    ax.set_title(f"delta at seat separates outcomes in {hits}/{len(rows)} "
-                 f"public datasets (marker area = episodes)", fontsize=10)
+    ax.set_title(f"delta at seat vs outcome: pre-registered d>0.5 in "
+                 f"{hits}/{len(rows)} datasets", fontsize=10)
     ax.legend(fontsize=8, loc="lower right")
     fig.tight_layout()
     out_png.parent.mkdir(parents=True, exist_ok=True)
@@ -271,6 +289,7 @@ def main():
     args = ap.parse_args()
 
     quanta: dict[str, float] = {}
+    frames: dict[str, int] = {}
     if os.path.exists(args.quanta_jsonl):
         for line in open(args.quanta_jsonl):
             try:
@@ -278,12 +297,14 @@ def main():
             except Exception:
                 continue
             if r.get("status") == "success" and r.get("quantum"):
-                quanta[r["repo_id"].replace("/", "__")] = float(r["quantum"])
+                name = r["repo_id"].replace("/", "__")
+                quanta[name] = float(r["quantum"])
+                frames[name] = int(r.get("n_frames") or 0)
 
     root = os.path.expanduser(args.root)
     if args.fetch:
         have = {os.path.basename(p) for p in glob.glob(os.path.join(root, "*"))}
-        fetch_more(root, quanta, have, args.fetch)
+        fetch_more(root, quanta, have, args.fetch, frames)
 
     roots = sorted(glob.glob(os.path.join(root, "*")))[: args.limit]
     out, scored = [], []

@@ -746,3 +746,45 @@ the 120 N tier (43-68/100) -- the depth-diverse demos teach grips up to
 ~100 N and the policies imitate the distribution. Safety therefore stays
 architectural; the guard-wrapper integration on the scaled checkpoint is the
 final experiment.
+
+## Phase 3 Task 1 -- corpus study: the pre-registered prediction is falsified, informatively (2026-08-16)
+
+Frozen protocol in `docs/phase3.md` (committed before the run); one script
+(`scripts/corpus_delta_outcome.py`), one figure
+(`figures/paper/fig1_corpus.png`). Sample: 16 public SO-100/101 teleop
+datasets scored of the spec's 20 -- the 555-repo candidate pool plus frozen
+gates (>=20 episodes with a close event, median one close per episode, both
+outcome classes >=5) plus intermittent Hub connectivity from the bench
+support no more; documented, not padded.
+
+**Pre-registered:** successes carry HIGHER delta-at-seat; Cohen's d > 0.5 in
+>=10/20 datasets. **Observed: 2/16.** Pooled within-dataset-z d = -0.39
+(546 episodes, 283 proxy-successes). Per-dataset: 6/16 significantly
+negative (bootstrap 95% CI below 0), 2/16 significantly positive (above 0),
+8 null. The prediction is dead; the channel is not: |d| > 0.5 in 9/16
+datasets. The sign, not the information, was wrong.
+
+**What the traces say happened.** Teleop operators over-command every close
+(the leader lever has no hard stop), so the seated flag fires in ~100% of
+episodes in 14/16 datasets -- empty jaws stall at the mechanical stop just
+like full ones, and delta-at-seat cannot report object presence. What it
+does report: successful grasps are STEREOTYPED -- in `ball_in_cup` every
+clean episode rests at the same ~7-count gap (the channel reading the same
+grasp identically; the low-variance side of Cohen's d, which is why two
+task-repetitive datasets blow out to d ~ -16/-20) -- while failure episodes
+contain deep-jam frames where the operator forces 40-80 counts against a
+stalled jaw. In the wild, high delta at grasp time is a STRUGGLE signal,
+not a success signal.
+
+**What dies:** the strongest retroactivity claim -- "delta at grasp predicts
+episode outcome across the public corpus" -- and with it any plan to mine
+the corpus for success labels via this channel alone. **What survives:**
+(i) the channel is recoverable from every position-only log and carries
+outcome-relevant signal (9/16 at |d|>0.5) whose sign is task-dependent;
+(ii) the struggle/anomaly reading aligns with the enforcement use -- the
+same high-delta events the corpus associates with failure are what the
+guard caps; (iii) the design claim (Task 2) never depended on this
+prediction and stands on the sim causal chain. Known limits, frozen with
+the protocol: the success proxy is unvalidated against ground truth (no
+labels exist in the corpus); multi-grasp tasks are excluded by design;
+n=16 not 20.
