@@ -1,0 +1,83 @@
+{
+  "grip_mode": "force",
+  "rows": [
+    {
+      "crush": -1.0,
+      "guarded": false,
+      "placed": 24,
+      "picked": 28,
+      "crushed": 0,
+      "episodes": 30,
+      "ci": [
+        0.6269395261897256,
+        0.9049502189759876
+      ],
+      "peak_force_median": 40.702930036945936
+    },
+    {
+      "crush": -1.0,
+      "guarded": true,
+      "placed": 23,
+      "picked": 28,
+      "crushed": 0,
+      "episodes": 30,
+      "ci": [
+        0.5907132766967574,
+        0.8820776078949878
+      ],
+      "peak_force_median": 40.702930036945936
+    },
+    {
+      "crush": 120.0,
+      "guarded": false,
+      "placed": 20,
+      "picked": 28,
+      "crushed": 4,
+      "episodes": 30,
+      "ci": [
+        0.48779725813830266,
+        0.807697044731538
+      ],
+      "peak_force_median": 40.702930036945936
+    },
+    {
+      "crush": 120.0,
+      "guarded": true,
+      "placed": 19,
+      "picked": 28,
+      "crushed": 4,
+      "episodes": 30,
+      "ci": [
+        0.45513246433604937,
+        0.7812629779598231
+      ],
+      "peak_force_median": 40.702930036945936
+    },
+    {
+      "crush": 60.0,
+      "guarded": false,
+      "placed": 6,
+      "picked": 28,
+      "crushed": 22,
+      "episodes": 30,
+      "ci": [
+        0.09504978102401235,
+        0.37306047381027446
+      ],
+      "peak_force_median": 40.702930036945936
+    },
+    {
+      "crush": 60.0,
+      "guarded": true,
+      "placed": 5,
+      "picked": 28,
+      "crushed": 22,
+      "episodes": 30,
+      "ci": [
+        0.07336434240351683,
+        0.33564705185680177
+      ],
+      "peak_force_median": 40.702930036945936
+    }
+  ]
+}
