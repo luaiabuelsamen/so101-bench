@@ -61,14 +61,26 @@ def main():
         xs.append(k)
         means.append(mean)
     base_mean = means[0] if means else 0.0
-    ax.axhspan(base_mean, base_mean + 15, color="gray", alpha=0.12,
-               label="below resolution vs base (σ_seed≈10, n=100×3)")
+    n_seeds = max(len(v) for v in cells.values())
+    res = 15.0 * (3.0 / n_seeds) ** 0.5
+    ax.axhspan(base_mean, base_mean + res, color="gray", alpha=0.12,
+               label=f"below resolution vs base (σ_seed≈10, n=100×{n_seeds})")
     ax.set_xticks(range(len(ORDER)), [LABELS[o] for o in ORDER], fontsize=8)
     ax.set_ylabel("place success / 100 (dots = seeds, bar = mean)")
     ax.set_title("What must the policy observe? 280 demos, 12k steps, "
                  "identical everything but the observation", fontsize=10)
     ax.set_ylim(-2, max(45, max(means) + 8))
     ax.legend(fontsize=8, loc="upper left")
+
+    def bracket(i, j, y, text):
+        ax.plot([i, i, j, j], [y - 1, y, y, y - 1], color="black", lw=0.8)
+        ax.annotate(text, ((i + j) / 2, y + 0.6), ha="center", fontsize=8)
+
+    idx = {L: k for k, L in enumerate(ORDER)}
+    top = max(means) + 4
+    bracket(idx["A"], idx["D"], top, "predicting δ ≈ nothing (t=0.1)")
+    bracket(idx["B"], idx["E"], top + 5.5, "observing δ−lag: +12.8 (t=2.6)")
+    ax.set_ylim(-2, top + 10)
     fig.tight_layout()
     out = Path("figures/paper/fig2_grid.png")
     out.parent.mkdir(parents=True, exist_ok=True)
