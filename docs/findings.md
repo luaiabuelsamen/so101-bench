@@ -974,3 +974,16 @@ flat-motion set drifting -0.85 to -0.40, and the degenerate low-variance
 stacking set whose |d| inflates meaninglessly). The bench latency
 measurement (roadmap A) pins k physically; retroactive training on real
 logs (C.2) should build its lag baseline at the measured k, not k=1.
+
+## Roadmap E.1 -- compensator ladder, offline (2026-08-18, CPU)
+
+Free-motion predictors of delta, fit on the episode-split train portion of
+jaw-open frames, held-out RMSE per joint: the paper's scalar velocity model
+(M1, K*r) is within 0.1-4% of an intercept model, a direction+accel linear
+model, and a 4-tap FIR on every joint (jaw: best richer model improves on
+M1 by 1.9% of residual). Per the roadmap's decision rule: richer
+compensators saturate -> linear was enough; arm E' is not warranted.
+Caveat recorded: the comparison domain is free-motion frames (the fit
+domain), where the jaw's rate is small -- the ladder ranks model families,
+and all families tie, which is the evidence sought; it does not measure
+closed-loop policy impact, which is arm E itself.
