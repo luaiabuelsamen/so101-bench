@@ -1,119 +1,99 @@
-# Enforce, Don't Learn: Actuator-Level Runtime Safety for Learned Policies on Low-Cost Arms
+# The Observation the Fleet Already Logs: Tracking Error as a Force Channel at Small Data
 
-*Draft for a workshop submission (low-cost manipulation / safe learning).
-Four pages, three figures + one hardware figure pending. Full lab record with
-every n and CI: `findings.md`.*
+*Paper-one draft, workshop-sized (4 pages, 3 figures). Scope set 2026-08-18
+after external review: a small-data observability result on one servo
+family, an honest ecosystem negative, and infrastructure — nothing larger.
+Full lab record: findings.md. Prior framing ("Enforce, Don't Learn")
+retired; the guard is one paragraph of infrastructure here.*
 
-## Premise, and the baseline question answered first
+## Claim (one sentence)
 
-Low-cost servo arms (SO-100/101 and kin) ship without force sensing, and the
-policies people train on them crush what they grasp. The STS3215 servo does
-expose `Present_Load` and `Present_Current` over the bus -- so why build
-anything on the tracking error `delta = goal - present`? Two reasons, one
-argued and one measured. Argued: **the public LeRobot corpus records neither
-load nor current** -- positions and goals only -- so `delta` is the only force
-channel recoverable from the thousands of datasets that already exist (we
-measured it across 555 of them: median 1.5 distinguishable levels during
-contact holds at factory gains). Measured: our calibration protocol
-(`hardware/staircase_cal.py`) logs `delta`, `Present_Load`, and
-`Present_Current` against a load cell in one session; the comparison figure is
-the first figure of this paper, and if the dedicated registers dominate on
-live hardware, the claim narrows honestly to the recorded-corpus and
-runtime-guard use cases below.
+On SO-100/101-class arms, the position-only logs the ecosystem already
+records contain a force observation — `delta = action[t−1] − state[t]`, the
+servo loop's rejection of its command — and at small data (280 demos, 12k
+steps) making this channel observable moves behavior-cloned pick-and-place
+from floor to [GRID: C mean vs A mean], while the channel's *form* decides
+whether the gain survives [GRID: B/D/E/F verdict].
 
-## Claim
+## 1. The channel and its envelope (foundation)
 
-**Safety properties of learned manipulation policies on low-cost arms should
-be enforced at the actuator layer, not learned.** We support this with a
-~30-line, bus-observable jaw guard -- stall-detected contact plus a bounded
-squeeze cap -- that eliminated **96% of crush events (85/180 → 3/180)** across
-three behaviour-cloned policies on identical paired episodes, with no
-retraining and no privileged state; and with the converse result that
-learning-side interventions do not deliver safety: adding the load channel to
-the policy's observation halves crush events at native resolution, the effect
-vanishes at 16-count resolution, and scaled, competent policies (57-63%
-success) crush *more*, because demonstration-faithful cloning reproduces the
-demonstrator's force distribution.
+Verbatim from ACT §IV: force "is implicitly defined by the difference
+between" leader and follower positions — the field names the channel in its
+action labels and observes only one operand. Stock LeRobot reads
+`Present_Position` alone; its own register table defines `Present_Load`.
+Characterization on the simulated STS3215 plant: 2.00 N/count seated and
+quasi-static (held-out RMSE 4.3 N over 4–78 N), non-informative while
+sliding, resolution requirement tracking the physical safety margin (the
+cliff figure). Neighbours conceded up front: NeuralActuator (RSS'26) owns
+force-aware-BC-beats-position-only on this servo class with live telemetry
+and a rig; FACTR 2 owns estimated-torque-into-BC via current telemetry.
+The strip claimed here and nowhere else: **no currents, no calibration rig,
+recoverable retroactively from recorded position-only logs** — an
+already-frozen corpus of thousands of datasets.
 
-## Positioning
+## 2. The small-data grid (central figure)
 
-*(post reading pass; verified sources in `docs/reading_notes/`, gap analysis
-in `docs/gap.md`)*
+Six observation designs, identical everything else (280 demos, 12k steps,
+96 px, 3 seeds × n=100; σ_seed ≈ 10 points measured first — nothing under
+15 points is claimed):
 
-Sensorless force estimation is decades old -- generalized-momentum residual
-observers detect collisions from identified dynamics (De Luca 2005; Haddadin
-T-RO 2017), and torque-from-(command, position) exists even for hobby servos
-(Hwang et al., Sensors 2018 -- the raw idea's prior art, which we cite and
-extend with a calibrated validity envelope). The current wave is converging
-on our premise: NeuralActuator (RSS 2026, Outstanding Systems Paper) learns
-per-actuator external-force models on this same servo class (0.36-0.73 N
-MAE) and already demonstrates on hardware that a force-aware BC policy beats
-position-only control -- so "force input improves BC on this servo" is owned,
-and we do not claim it. What that line requires is live load/current
-telemetry plus an instrumented calibration rig; FACTR 2 (2026) likewise
-feeds estimated external torque into BC via a trained estimator over current
-telemetry. Neither channel exists in the recorded public corpus -- our claim
-is confined to the strip they leave open (no currents, no calibration,
-retroactive on recorded data) -- and that line never addresses enforcement.
+[GRID TABLE — A base | B +a[t−1] | C +delta | D delta-as-aux-target |
+E delta-minus-lag-baseline | F seat-event token; plus trained-through-guard
+column. Current: A {0,15,4}, B {4,15,·}, C {11,25,31}.]
 
-Runtime enforcement for learned policies is likewise canonical -- Simplex,
-shielding (Alshiekh et al., AAAI 2018), CBFs (Ames et al.), the Brunke et
-al. survey -- but every published enforcing filter consumes an identified
-model, a ground-truth state estimate, a perception stack, or an F/T sensor,
-and the recent manipulation-specific safety layers need kilohertz
-reachability, URDF-plus-scene collision oracles, or GPU-scale world models.
-None targets crush of the grasped object (the one hazard catalog that covers
-manipulation explicitly excludes non-collision failures), and none reports
-the successes its interventions delete. The ecosystem's only shipped guard,
-LeRobot's `max_relative_target`, is command-side, contact-blind, and off by
-default. Our contribution sits exactly in that hole: **a Simplex-style
-runtime assurance whose monitor watches bus telemetry instead of modeled
-state** -- the position-register history the cheapest servo already provides
--- enforcing a constraint no published filter family covers, with paired
-accounting of the successes the cap deletes.
+Pre-registered predictions and their fates go here verbatim, including the
+flat-grid outcome if it lands. Supporting causal evidence carried from the
+ladder: channel-free policies plateau at 16–24% lift-commitment across
+three data recipes (14× input counterfactual); channel-bearing reach 47–76%.
 
-## Evidence (figures)
+## 3. The ecosystem negative (corpus, full strength)
 
-1. **Foundation -- the channel is real but bounded** (calibration): linear at
-   2.00 N/count seated and quasi-static (held-out RMSE 4.3 N over 4-78 N),
-   non-informative during sliding, meaningless during fast transport;
-   seating detectable at recall 1.00 / adversarial precision 0.78. Pending
-   twin figure on hardware: `delta` vs `Present_Load` vs `Present_Current`
-   vs load cell.
-2. **Resolution requirement tracks the physical margin** (Fig 1): coarsening
-   the channel collapses crush-aware grasping as a cliff whose location moves
-   with the safety margin -- a design rule (`quantum < margin / N-per-count`)
-   rather than a benchmark number.
-3. **The guard** (Fig 2): 85/180 → 3/180 crushes across three checkpoints;
-   median peak force 33-131 N → 13-26 N. Measured caveats included: a force
-   cap deletes successes earned by over-gripping, and the stall test must
-   compare measured motion against servo-feasible (not commanded) travel or
-   fast-commanding policies trigger phantom seats.
-4. **Learning does not substitute** (Fig 3): the BC ladder 5% → 57-63%
-   success shows competence scaling with data and compute while crush rates
-   *worsen*; observation-side fixes are resolution-fragile; policies without
-   any action-history input never learn grasp commitment at all (16-24%
-   plateau, causally attributed by input counterfactual, 14x).
+Pre-registered: delta-at-seat separates grasp outcomes at d > 0.5 in ≥10
+of 20 public datasets. Observed: 2/16, pooled d = −0.39 (546 episodes) —
+with 9/16 at |d| > 0.5 and six significantly *inverted*. Teleop operators
+over-command every close; empty jaws stall at the mechanical stop exactly
+like full ones; successes are stereotyped low-delta closes; failures carry
+40–80-count jam frames. **In the wild the channel is a struggle signal,
+not a success signal** (Fig: forest plot). The strongest retroactivity
+claim dies here by its own test; what survives is
+recoverable-and-informative with task-dependent sign — an anomaly/safety
+channel, not a label mine.
 
-## Screening protocol (secondary contribution)
+## 4. Infrastructure (one paragraph)
 
-Our rigid-block negative control showed a standard pick-place task cannot
-detect force feedback at all (blind clamp ties oracle, 118/120 paired ties).
-We propose oracle-first screening -- run blind/proxy/oracle scripted experts
-before any training -- as a cheap admission test for any benchmark claiming to
-study a sensing modality.
+A ~40-line jaw guard — stall/lag-excess seat detection, force-budget cap,
+closing-rate limit, all from bus telemetry — passes the paired-reference
+test (scripted teacher 25/30 through it vs 28/30 raw; interference = 3
+episodes) and converts the scaled policy's crush rate 27→3 at the 60 N
+tier. This is engineered plumbing in the Robotiq tradition, reported as
+infrastructure with its integration lessons (feed back applied commands;
+wrapped controllers must be closed-loop on contact), not as a contribution.
+
+## 5. Hardware calibration
+
+[CAL FIGURE — N vs counts on a real STS3215: delta vs Present_Load vs
+Present_Current vs load cell, three speeds; comparison rows: sim 2.0
+N/count, Hwang 2018, NeuralActuator reported error. The one figure that
+touches reality; transfers or replaces every sim constant above.]
+
+## 6. Methodology carried (secondary, brief)
+
+Oracle-first benchmark screening (a rigid-block control shows standard
+pick-place cannot detect force sensing at all); paired working references
+before any null is reported; σ_seed measured before any arm comparison;
+deleted-success accounting for safety layers. Offered as checklist, not
+framework.
 
 ## Limitations
 
-All force constants currently inherit the simulator's contact model; the
-hardware calibration (in progress) either transfers them or replaces them --
-a negative transfer result would itself be the first honest measurement of
-this channel. Two seeds per learned arm. One gripper, one object family. The
-guard's precision against jams is 0.78 and inherited by everything above it.
+One gripper, one object family, sim except §5; 3 seeds at n=100 resolves
+only ≥15-point gaps; the success proxy in §3 is unvalidated against ground
+truth; force constants inherit the simulator's contact model until §5
+lands.
 
-## Six-week plan to submission
+## The wall this paper found (one line, closes the paper)
 
-W1: three-channel load-cell calibration on a real STS3215. W2: literature
-positioning pass (20 papers, one page). W3-4: guard on the real arm, A/B
-video against a deliberately over-gripping policy. W5-6: 4-page writeup,
-three figures, workshop submission.
+What must a policy observe to grasp reliably at 200 demonstrations on a
+$500 arm? This paper shows position-only observation is not enough and one
+recoverable channel moves the floor; the next one attacks the question
+directly.
