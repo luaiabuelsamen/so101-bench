@@ -10,10 +10,16 @@ retired; the guard is one paragraph of infrastructure here.*
 
 On SO-100/101-class arms, the position-only logs the ecosystem already
 records contain a force observation — `delta = action[t−1] − state[t]`, the
-servo loop's rejection of its command — and at small data (280 demos, 12k
-steps) making this channel observable moves behavior-cloned pick-and-place
-from floor to [GRID: C mean vs A mean], while the channel's *form* decides
-whether the gain survives [GRID: B/D/E/F verdict].
+servo loop's rejection of its command — and at small data the policy must
+**observe** it: predicting the channel as an auxiliary target does nothing
+(D 8.7 ≈ base 6.3/100), while the same information at the input, in its
+confound-subtracted form, quadruples success over raw action history
+(E 29.7 vs B 11.3; 3 seeds × n=100, claims restricted to gaps above the
+measured σ_seed resolution).
+
+*Lead structure per review: D-vs-A is the mechanistic sentence (predicting
+≠ observing); E-over-B is the headline number; C−B and E−C are stated at
+their resolution pending seeds 4–5 (funded, running).*
 
 ## 1. The channel and its envelope (foundation)
 
