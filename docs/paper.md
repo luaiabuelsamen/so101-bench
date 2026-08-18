@@ -11,11 +11,11 @@ retired; the guard is one paragraph of infrastructure here.*
 On SO-100/101-class arms, the position-only logs the ecosystem already
 records contain a force observation — `delta = action[t−1] − state[t]`, the
 servo loop's rejection of its command — and at small data the policy must
-**observe** it: predicting the channel as an auxiliary target does nothing
-(D 8.7 ≈ base 6.3/100), while the same information at the input, in its
-confound-subtracted form, quadruples success over raw action history
-(E 29.7 vs B 11.3; 3 seeds × n=100, claims restricted to gaps above the
-measured σ_seed resolution).
+**observe** it: predicting the channel as an auxiliary target contributes
+nothing (D 6.6 vs base 6.2/100, t=0.1, five seeds), while the same
+information at the input, in its confound-subtracted form, is the only
+design that resolvably beats raw action history (E 26.6 vs B 13.8,
+t=2.6; raw delta's +8.0 over history does not resolve, t=1.4).
 
 *Lead structure per review: D-vs-A is the mechanistic sentence (predicting
 ≠ observing); E-over-B is the headline number; C−B and E−C are stated at
