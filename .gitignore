@@ -11,3 +11,10 @@ outputs/
 vendor/
 checkpoints/
 modal_outputs/
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.bbl
+paper/*.blg
+paper/*.fls
+paper/*.fdb_latexmk
