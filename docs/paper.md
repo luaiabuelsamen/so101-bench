@@ -27,7 +27,8 @@ In simulation, the lag-excess policy succeeds in 26.6/100 episodes versus
 13.8/100 for an action-history baseline (5 seeds × 100 episodes, 95% CI on
 the difference [+2.8, +22.6]), while predicting δ as an auxiliary training
 target matches the channel-free base (6.6 vs 6.2). On the public corpus,
-high δ at grasp time predicts struggle rather than success. Code and data
+high δ at grasp time is associated with failure under the frozen outcome
+proxy, not with success. Code and data
 at [URL].
 
 ---
@@ -93,6 +94,24 @@ suppresses the free-motion component of δ, leaving a residual that is
 near zero during unloaded motion and grows with applied load when the jaw
 is seated and quasi-static.
 
+Precisely, with all signals in encoder counts at the recorded cadence
+(stride-2 frames of a 30 Hz bus, i.e. 15 Hz): δ_j[t] = a_j[t−1] − s_j[t],
+where a is the commanded and s the measured position — the k=1 alignment
+convention; an offset sweep over k = 0..5 on the public corpus leaves
+every Sec. 4.3 conclusion unchanged (median Cohen's-d span 0.12) while
+estimating the physical alignment at k ≈ 3–4 recorded frames, which the
+Sec. 4.5 latency measurement will pin. The commanded rate is the
+first difference of commands, r_j[t] = a_j[t−1] − a_j[t−2] (zero at the
+first two frames of an episode). The lag model is a single per-joint
+scalar through the origin, K̂_j = Σ r δ / Σ r², fit over frames whose jaw
+command exceeds its 30th percentile (jaw-open ⇒ contact-free in this
+task; K̂ = 0.75–1.08 across joints on our training set), computed once on
+the training demonstrations and frozen. The policy input is the
+concatenation [s_norm, (δ − K̂·r − μ_δ)/σ_δ] with the same normalization
+statistics saved beside the checkpoint and applied identically at
+evaluation; at evaluation a[t−1] is the previously issued command, so the
+feature is computable from exactly what the deployed stack already has.
+
 To evaluate the channel we build a simulated STS3215-class plant with a
 calibrated contact model, a pick-and-place task whose success requires
 holding grip force inside a physical window (an oracle admission test
@@ -120,11 +139,13 @@ We summarize our contributions below:
 1. Characterization of servo tracking error as a contact/load proxy, with
    a validity envelope and a resolution-vs-margin design rule (Sec. 3.2,
    4.1).
-2. A six-design observation study at 280 demonstrations: the channel must
-   be observed rather than predicted, and only the lag-subtracted form
-   outperforms raw action history at seed resolution (Sec. 4.2).
+2. A six-design observation study at 280 demonstrations: the tested
+   auxiliary-prediction baseline does not recover the direct-input gain,
+   and the lag-subtracted form is the only tested design clearing the
+   declared threshold against raw action history (Sec. 4.2).
 3. A pre-registered study across 16 public teleoperation datasets
-   identifying δ at grasp time as a struggle signal (Sec. 4.3).
+   associating high δ at grasp time with proxy-defined failure rather
+   than success (Sec. 4.3).
 4. A runtime jaw guard operating from bus telemetry alone, with paired
    deleted-success accounting (Sec. 4.4).
 
@@ -194,11 +215,18 @@ Each servo runs a proportional position loop, so joint torque obeys
 τ ≈ K_p · δ and, at the jaw, applied grip force obeys F ≈ κ · δ_jaw for a
 calibration constant κ in newtons per count. The lag excess is
 
-    e[t] = δ[t] − K̂ · q̇[t],
+    e[t] = δ[t] − K̂ · r[t],    r[t] = g[t−1] − g[t−2],
 
-where K̂ is a per-joint following-lag coefficient fit by least squares on
-the jaw-open frames of the training demonstrations. The fit uses no labels
-and is frozen before policy training. Two conditions make δ meaningful:
+where r[t] is the one-step command rate and K̂ is a per-joint coefficient
+fit by least squares through the origin on the free-motion frames of the
+training demonstrations. All quantities are in integer encoder counts at
+the demonstration rate of 15 Hz (demonstrations are stride-2 subsamples of
+a 30 Hz control loop). Free-motion frames are selected by a label-free
+criterion: frames whose jaw command exceeds its 30th percentile over the
+training set, since an open jaw is the only contact-free guarantee this
+task offers. δ and r are defined as zero at episode boundaries where no
+previous command exists. The fit is deterministic given the demonstrations
+and is computed before policy training. Two conditions make δ meaningful:
 the logged action must be the command actually applied to the servo rather
 than an unfiltered intention, and the command-to-state timing must be
 known and stable. Both hold by construction in our simulated plant; on
@@ -271,11 +299,19 @@ proprioceptive observation.
 that makes δ recoverable in principle, and the arm the copycat literature
 [8, 9] warns about. **Delta (C).** s[t] plus raw δ[t]: the channel with
 its motion confound intact. **Auxiliary target (D).** s[t] only, with δ[t]
-predicted as an auxiliary training target: the same information as
-supervision rather than input. **Lag excess (E).** s[t] plus e[t]: the
-channel with free-motion lag subtracted (Sec. 3.1). **Seat token (F).**
-s[t] plus a latched binary seat bit from the stall detector: the channel
+predicted as an auxiliary training target through a small head at loss
+weight 0.1: the same information as supervision rather than input.
+**Lag excess (E).** s[t] plus e[t]: the channel with free-motion lag
+subtracted (Sec. 3.1). **Seat token (F).** s[t] plus a latched binary seat
+bit, produced by running the guard's frozen stall detector (Sec. 4.4)
+causally over each episode's (s[t], a[t−1]) jaw pairs: the channel
 compressed to one bit.
+
+Implementation details shared across arms: joint states and actions are
+standardized by dataset statistics; δ, e, and the aux target are
+normalized by a fixed scale of 8 counts with zero mean, so no channel
+statistic leaks from evaluation; appended channels concatenate onto the
+state vector, leaving the network otherwise unchanged.
 
 ## 4. Experiments
 
@@ -326,10 +362,12 @@ marks differences below the σ_seed resolution of Sec. 3.3. Best in bold.
 Three results resolve. First, channel-bearing observation beats
 channel-free observation in every input form (C, E, F vs A: t = 3.1-4.7;
 bootstrap 95% CIs [+5.6, +25.2], [+11.6, +29.0], [+6.0, +25.2]). Second,
-the channel must be observed, not predicted: arm D trains the identical
-encoder to predict δ as an auxiliary target and lands equal to base
-(6.6 vs 6.2, CI on the difference [−6.2, +6.4]), while the same
-information as an input (C, E) triples success. Third, in the declared
+the tested auxiliary-prediction design does not recover the direct-input
+gain: arm D trains the identical encoder to predict δ
+through a weight-0.1 head and lands equal to base (6.6 vs 6.2, CI on the
+difference [−6.2, +6.4]), while the same information as an input (C, E)
+triples success. Other auxiliary weightings and architectures could in
+principle close this gap; none was tuned here. Third, in the declared
 headline comparison, only the lag-excess form beats the action-history
 baseline at resolution (E−B = +12.8, t = 2.6, CI [+2.8, +22.6]); raw δ's
 +8.0 over history does not resolve (CI [−2.8, +18.6]), consistent with
@@ -375,7 +413,8 @@ mechanical limit exactly as loaded ones do. Successful grasps are
 stereotyped low-δ closes (in one dataset every clean episode rests at the
 same 7-count gap), while failure episodes carry 40-80-count frames of an
 operator forcing a jammed grasp. On the public corpus, high δ at grasp
-time is a struggle signal. This rules out mining the corpus for success
+time is associated with failure under the frozen proxy definition. This
+rules out mining the corpus for success
 labels through this channel alone, and it supports the enforcement use:
 the high-δ events the corpus associates with failure are the events the
 guard of Sec. 4.4 caps.
@@ -469,9 +508,9 @@ partially complete at this draft.
 Position-command logs contain a retrospectively computable contact proxy:
 the servo tracking error, valid within a quasi-static envelope that our
 simulated plant makes measurable. At 280 demonstrations in that setting,
-policies must observe this channel rather than predict it, and the
-free-motion-compensated form is the only design that beats raw action
-history at seed resolution. Across 16 public datasets the channel reads
+policies must observe this channel, and predicting it as the tested
+auxiliary target recovers none of the gain; the free-motion-compensated
+form is the only design that beats raw action history at seed resolution. Across 16 public datasets the channel reads
 operator struggle rather than success, which forecloses free outcome
 labels and motivates enforcement. A 40-line telemetry-only guard removes
 96% of simulated crush events on unmodified policies. The claims that
