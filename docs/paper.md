@@ -32,6 +32,16 @@ only if the policy actually sees it, and only in the right form.
 
 ---
 
+![Teaser](../figures/paper/fig_teaser.png)
+
+*Fig. 1 — identical scene, identical data budget, two observers. Top: the
+stock observation (joint positions only) reaches, grips, and abandons the
+block. Bottom: the same network plus the δ−lag channel — recoverable from
+the same log — places it. The |δ| traces under each row show what the
+stock policy never sees.*
+
+---
+
 ## 1. The channel and its envelope
 
 The STS3215-class servo tracks integer `Goal_Position` commands with a
@@ -44,9 +54,16 @@ resolution requirement tracks the physical safety margin — coarsening the
 observation collapses force-aware grasping as a cliff whose location moves
 with the margin:
 
+![Mechanism](../figures/paper/fig_mech.png)
+
+*Fig. 2 — the mechanism on one servo, one grasp: the measured position
+tracks the command through the free close (small lag), then the object
+holds the jaw while the command deepens — the gap is the force reading,
+≈2 N per count, with first contact and the detector's seat event marked.*
+
 ![Resolution cliff](../figures/paper/fig1_cliff.png)
 
-*Fig. 1 — the resolution requirement is a design rule
+*Fig. 3 — the resolution requirement is a design rule
 (`quantum < margin / N-per-count`), not a benchmark number.*
 
 Neighbours, conceded up front: NeuralActuator (RSS 2026) demonstrates
@@ -67,7 +84,7 @@ n=100), and no gap below the corresponding resolution is claimed.
 
 ![Observation-design grid](../figures/paper/fig2_grid.png)
 
-*Fig. 2 — dots are seeds, bars are means; the gray band is the
+*Fig. 4 — dots are seeds, bars are means; the gray band is the
 below-resolution zone against base.*
 
 | arm | observation | mean/100 | vs base | vs raw history |
@@ -103,7 +120,7 @@ successes carry higher δ, Cohen's d > 0.5 in ≥ half of 20 datasets.
 
 ![Corpus forest plot](../figures/paper/fig1_corpus.png)
 
-*Fig. 3 — per-dataset Cohen's d, bootstrap 95% CI; 16 datasets scored of
+*Fig. 5 — per-dataset Cohen's d, bootstrap 95% CI; 16 datasets scored of
 the 20 targeted (candidate pool + frozen gates + connectivity, documented).*
 
 **The prediction is falsified: 2/16.** But 9/16 datasets show |d| > 0.5,
