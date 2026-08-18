@@ -987,3 +987,20 @@ Caveat recorded: the comparison domain is free-motion frames (the fit
 domain), where the jaw's rate is small -- the ladder ranks model families,
 and all families tie, which is the evidence sought; it does not measure
 closed-loop policy impact, which is arm E itself.
+
+## Rev-3 desk items (2026-08-18 evening)
+
+- **K-hat threshold sensitivity (NEW, P2): closed.** Refit at free-motion
+  criterion percentiles 10/20/30/40/50: per-joint K moves <= 0.09 (jaw
+  0.80-0.89, joint 0 0.78-0.79). The criterion is not a tuned knob. (Note:
+  the smoke-test K values quoted earlier came from a 12-episode subset;
+  full-set values are the canonical ones.)
+- **k-sweep timing figure (NEW, P1): built** from the C.1 data ->
+  figures/paper/fig_ksweep.png (residual minimum at k*~3-4; d flat, span
+  0.12).
+- **Compensator ladder status sync:** linear family ran (saturates at K*r,
+  jaw +1.9%); the spec's small-MLP variant still to add.
+- **Venue dates verified:** CoRL 2026 main deadline passed (May 25/28);
+  conference Nov 9-12 Austin, workshop day Nov 9 -> CoRL-26 workshop CFPs
+  are the imminent rule-6 target; "CoRL main track" = CoRL 2027 (~May).
+  Two-track plan: workshop ship first, rev-3 A+B+D program aims at 2027.
