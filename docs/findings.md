@@ -960,3 +960,17 @@ beats channel-free; (2) only the confound-subtracted form resolvably beats
 raw action history; (3) the channel must be observed, not predicted.
 Pre-registration discipline paid twice in one table: F's marginal claim
 was flagged marginal and fell; E's was flagged resolved and held.
+
+## Roadmap C.1 -- offset sweep (2026-08-18, CPU): the corpus result is
+alignment-robust, and the true alignment is k~3-4
+
+Sweeping delta_k = a[t-k] - s[t] over k=0..5 on the 16 scored datasets:
+free-motion |delta| is minimized at **k*=3 for 10/16 and k*=4 for 4/16**
+(~100-130 ms command-to-state at 30 fps) -- the protocol's k=1 convention
+was not the physical alignment. But the Sec 4.3 conclusion does not care:
+**median Cohen's-d span across the whole sweep is 0.12** -- signs and
+magnitudes hold for 14/16 datasets (the two movers: one k-insensitive
+flat-motion set drifting -0.85 to -0.40, and the degenerate low-variance
+stacking set whose |d| inflates meaninglessly). The bench latency
+measurement (roadmap A) pins k physically; retroactive training on real
+logs (C.2) should build its lag baseline at the measured k, not k=1.
