@@ -23,9 +23,18 @@ import pathlib
 
 import modal
 
-SPEC = json.loads(
-    (pathlib.Path(__file__).parent / "grid_spec.json").read_text()
-)
+def _load_spec():
+    # Modal mounts this module at /root/ inside the container while the
+    # repo (and the committed spec) is mounted at /repo/scripts/ -- the
+    # first dry run crashed at import on exactly this. Check both.
+    for p in (pathlib.Path(__file__).parent / "grid_spec.json",
+              pathlib.Path("/repo/scripts/grid_spec.json")):
+        if p.exists():
+            return json.loads(p.read_text())
+    raise FileNotFoundError("grid_spec.json not beside module or in /repo/scripts")
+
+
+SPEC = _load_spec()
 T = SPEC["train"]
 
 app = modal.App("so101-grid")
