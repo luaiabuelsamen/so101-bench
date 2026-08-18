@@ -899,3 +899,42 @@ H100 base_hist-vs-delta cell (already softened) and any tournament-era
 resolution. Claims stand only where the gap exceeds the measured spread
 (e.g., channel-bearing vs channel-free arms, 16-24% vs 47-76% conditional
 lift -- a 30+ point gap).
+
+## Task 2 main grid complete (2026-08-18): the design result, at resolution
+
+Six observation designs, identical everything else (280 demos, 12k steps,
+96 px, 3 seeds x n=100; sigma_seed ~ 10 -> only >=15-point differences are
+claimed). Figure: figures/paper/fig2_grid.png.
+
+| arm | input | seeds | mean |
+|---|---|---|---|
+| A base | s[t] | 0, 15, 4 | 6.3 |
+| B base_hist | s + a[t-1] | 4, 15, 15 | 11.3 |
+| C delta | s + (a[t-1]-s) | 11, 25, 31 | 22.3 |
+| D resid | s only; delta as aux target | 8, 12, 6 | 8.7 |
+| E excess | s + (delta - lag baseline) | 36, 32, 21 | **29.7** |
+| F token | s + latched seat bit | 29, 33, 18 | **26.7** |
+
+Pre-registered predictions (docs/task2_arms.md), their fates:
+- "D/E/F >= B if the channel's value is information": E-B = +18.4
+  (RESOLVED), F-B = +15.4 (at the floor, resolved marginally), D-B = -2.6
+  (FAILED). The split is the finding: **the channel must be observed, not
+  merely predicted** -- an auxiliary delta-prediction head adds nothing
+  (D ~= A), while the same information at the input moves the floor.
+- "E sharpest if the motion confound is the small-data blocker": E is the
+  top arm. Subtracting the free-motion lag baseline (self-labeled, frozen
+  pre-training) is the best-performing form -- consistent with the
+  characterization's motion-confound finding.
+- B ~= C at scale carried down: C-B = 11.0, UNRESOLVED at 3 seeds, exactly
+  the seeds45 question, along with E-C = +7.4 (whether the designed form
+  beats raw delta is suggestive, not claimed).
+
+Resolved sentences the paper may carry: a designed form of the channel
+(E, F) beats raw action history at small data; the channel as input beats
+the channel as training signal (E,C >> D); channel-bearing inputs beat
+channel-free (E-A = 23.4, C-A = 16.0). Texture logged, no claim: F picks
+at the highest rates in the grid (76-84 gripper-successes/100) and drops
+heavily -- the seat token drives commitment while retention lags.
+
+Cost note: dry + main = 9 H100 cells ~= $27 actual vs $23 estimated.
+Guarded column running locally (Cg s0 = 14 vs C s0 = 11).
