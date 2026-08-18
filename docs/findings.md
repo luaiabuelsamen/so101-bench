@@ -938,3 +938,25 @@ heavily -- the seat token drives commitment while retention lags.
 
 Cost note: dry + main = 9 H100 cells ~= $27 actual vs $23 estimated.
 Guarded column running locally (Cg s0 = 14 vs C s0 = 11).
+
+## Grid at 5 seeds (2026-08-18, seeds45 phase, ~$36): the verdicts firm up
+
+A {0,15,4,3,9} 6.2 | B {4,15,15,10,25} 13.8 | C {11,25,31,12,30} 21.8 |
+D {8,12,6,1,6} 6.6 | E {36,32,21,17,27} 26.6 | F {29,33,18,9,20} 21.8.
+Welch t at n=5 seeds x 100 episodes:
+
+RESOLVED: E-A +20.4 (t=4.7), C-A +15.6 (t=3.1), F-A +15.6 (t=3.1),
+**E-B +12.8 (t=2.6, p~0.03)** -- the design headline survives the seed
+expansion. D-A +0.4 (t=0.1): the aux-target arm is DEAD EQUAL to base at
+five seeds; predicting the channel instead of observing it contributes
+nothing. NOT RESOLVED: C-B +8.0 (t=1.4) -- raw delta does not separably
+beat raw history at this budget; F-B +8.0 (t=1.5) -- F's 3-seed marginal
+call collapsed exactly as its at-the-floor flag anticipated; E-C +4.8
+(t=0.9) -- whether E's edge is the subtraction or delta at all is not
+attributable here.
+
+The paper's three resolved sentences: (1) channel-bearing observation
+beats channel-free; (2) only the confound-subtracted form resolvably beats
+raw action history; (3) the channel must be observed, not predicted.
+Pre-registration discipline paid twice in one table: F's marginal claim
+was flagged marginal and fell; E's was flagged resolved and held.

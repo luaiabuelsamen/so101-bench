@@ -1,0 +1,13 @@
+{
+  "arm": "delta",
+  "steps": 12000,
+  "results": [
+    {
+      "crush": -1.0,
+      "success": 8,
+      "crushed": 0,
+      "dropped": 7,
+      "episodes": 100
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "arm": "excess",
+  "steps": 12000,
+  "results": [
+    {
+      "crush": -1.0,
+      "success": 17,
+      "crushed": 0,
+      "dropped": 27,
+      "episodes": 100
+    }
+  ]
+}
