@@ -49,6 +49,7 @@ def main():
                          "the slowed jaw arrives); force is the closed-loop "
                          "teacher and the fair reference")
     ap.add_argument("--json", default="results/expert_guarded_pairing.json")
+    ap.add_argument("--seed", type=int, default=3000)
     args = ap.parse_args()
 
     rows = []
@@ -58,7 +59,7 @@ def main():
     for crush in CRUSH_TIERS:
         for guarded in (False, True):
             env = DemoEnv(
-                seed=3000, cameras=(), image_size=96,
+                seed=args.seed, cameras=(), image_size=96,
                 crush_newtons=None if crush <= 0 else crush,
                 expert=ExpertConfig(grip_mode=args.grip_mode),
             )

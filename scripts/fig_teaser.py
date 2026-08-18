@@ -26,11 +26,15 @@ DEV = "cuda" if torch.cuda.is_available() else "cpu"
 FRAME_PX = 256
 
 
-def rollout(policy, st, arm, seed_env, episodes=8):
+def rollout(policy, st, arm, seed_env, episodes=12):
     """Run episodes; return per-episode dicts with frames + traces."""
-    # render at print resolution; the policy sees a 96px downsample
+    # policy sees the NATIVE 96px render it trained on; print frames come
+    # from a second renderer on the same scene state (a 256->96 downsample
+    # is not the training distribution -- E went 0-for-8 under it)
+    import mujoco
     env = DemoEnv(seed=seed_env, cameras=("front", "gripper_fpv"),
-                  image_size=FRAME_PX, stride=2, expert=ExpertConfig())
+                  image_size=96, stride=2, expert=ExpertConfig())
+    hi_renderer = mujoco.Renderer(env.scene.model, FRAME_PX, FRAME_PX)
     scene = env.scene
     eps = []
     k_hat = torch.from_numpy(np.asarray(st.get("k_hat", np.zeros(6)), np.float32))
@@ -40,7 +44,7 @@ def rollout(policy, st, arm, seed_env, episodes=8):
         z0 = scene.block_pos()[2]
         a_prev = a_prev2 = None
         frames, djaw, forces, rises = [], [], [], []
-        for t in range(220):
+        for t in range(260):        # full eval-protocol length; placements land late
             s = torch.as_tensor(scene.state_ticks(), dtype=torch.float32)
             s_n = (s - torch.from_numpy(st["s_mean"])) / torch.from_numpy(st["s_std"])
             if arm == "base":
@@ -53,11 +57,9 @@ def rollout(policy, st, arm, seed_env, episodes=8):
                                   / torch.from_numpy(st["d_std"])])
             obs = {"observation.state": s_in.unsqueeze(0).to(DEV)}
             for cam in ("front", "gripper_fpv"):
-                img = torch.as_tensor(scene.image(cam)).permute(2, 0, 1)
-                img = torch.nn.functional.interpolate(
-                    img.float().div(255).unsqueeze(0), size=(96, 96),
-                    mode="bilinear", align_corners=False)
-                obs[f"observation.images.{cam}"] = img.to(DEV)
+                obs[f"observation.images.{cam}"] = (
+                    torch.as_tensor(scene.image(cam)).permute(2, 0, 1)
+                    .float().div(255).unsqueeze(0).to(DEV))
             with torch.no_grad():
                 a_n = policy.select_action(obs).squeeze(0).cpu()
             action = a_n * torch.from_numpy(st["a_std"]) + torch.from_numpy(st["a_mean"])
@@ -66,7 +68,8 @@ def rollout(policy, st, arm, seed_env, episodes=8):
             cmd[5] = max(cmd[5], JAW_SHUT / RAD_PER_TICK)
             scene.hold(cmd * RAD_PER_TICK, frames=2)
             if t % 2 == 0:
-                frames.append(scene.image("front"))
+                hi_renderer.update_scene(scene.data, camera="front")
+                frames.append(hi_renderer.render().copy())
             djaw.append(abs(float(action[5]) - float(scene.state_ticks()[5])))
             forces.append(scene.grip_force())
             rises.append(scene.block_pos()[2] - z0)
@@ -126,18 +129,21 @@ def main():
         rows.append((label, sel))
         print(f"{label}: picked={sel['picked']} placed={sel['placed']}")
 
-    fig = plt.figure(figsize=(10, 5.6))
-    gs = fig.add_gridspec(4, 5, height_ratios=[2.2, 0.7, 2.2, 0.7],
+    fig = plt.figure(figsize=(10, 6.0))
+    gs = fig.add_gridspec(5, 5, height_ratios=[2.2, 0.7, 0.45, 2.2, 0.7],
                           hspace=0.16, wspace=0.03)
+    row_base = [0, 3]
     for r, (label, ep) in enumerate(rows):
         fidx, tidx, c = pick_frames(ep)
         for k in range(5):
-            ax = fig.add_subplot(gs[r * 2, k])
+            ax = fig.add_subplot(gs[row_base[r], k])
             ax.imshow(ep["frames"][fidx[k]])
             ax.set_xticks([]), ax.set_yticks([])
             if k == 0:
                 ax.set_ylabel(["A (stock)", "E (ours)"][r], fontsize=9)
-        axt = fig.add_subplot(gs[r * 2 + 1, :])
+            if k == 2:
+                ax.set_title(label, fontsize=10, pad=5)
+        axt = fig.add_subplot(gs[row_base[r] + 1, :])
         t = (np.arange(len(ep["djaw"])) - c) / 15.0
         axt.plot(t, ep["djaw"], color="#444444", lw=1.2)
         axt.fill_between(t, 0, ep["djaw"], color="#444444", alpha=0.15)
@@ -149,7 +155,8 @@ def main():
         axt.set_xlim(t[0], t[-1])
         if r == 1:
             axt.set_xlabel("time from contact (s)", fontsize=8)
-        fig.text(0.5, [0.965, 0.475][r], label, ha="center", fontsize=10)
+        else:
+            axt.tick_params(labelbottom=False)
     out = Path("figures/paper/fig_teaser.png")
     fig.savefig(out, dpi=180, bbox_inches="tight")
     print(f"wrote {out}")
