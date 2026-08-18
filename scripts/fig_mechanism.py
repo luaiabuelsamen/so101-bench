@@ -50,18 +50,30 @@ def main():
     hi = min(contact + 60, len(S) - 1)
     tt = (np.arange(lo, hi) - contact) / 15.0     # seconds, 0 = contact
 
+    # lag excess with the trained model's jaw coefficient
+    k_jaw = float(np.load(
+        "checkpoints/modal_E_s0/excess/norm_stats.npz")["k_hat"][5])
+    rate = np.zeros_like(goal)
+    rate[2:] = goal[1:-1] - goal[:-2]
+    e = delta - k_jaw * rate
+
     fig, (ax1, ax2) = plt.subplots(
         2, 1, figsize=(6.5, 4.2), sharex=True,
         gridspec_kw=dict(height_ratios=[2, 1.2], hspace=0.08))
-    ax1.plot(tt, goal[lo:hi], color="#d95f02", lw=1.6, label="commanded (Goal_Position)")
+    ax1.plot(tt, goal[lo:hi], color="#d95f02", lw=1.6, ls="--",
+             label="commanded (Goal_Position)")
     ax1.plot(tt, meas[lo:hi], color="#1b6ca8", lw=1.6, label="measured (Present_Position)")
     ax1.set_ylabel("jaw position (counts)")
     ax1.legend(fontsize=8, loc="upper right")
 
-    ax2.plot(tt, np.abs(delta[lo:hi]), color="#444444", lw=1.6)
-    ax2.fill_between(tt, 0, np.abs(delta[lo:hi]), color="#444444", alpha=0.15)
-    ax2.set_ylabel("|δ| (counts)")
+    ax2.plot(tt, np.abs(delta[lo:hi]), color="#999999", lw=1.4,
+             label="|δ| (raw)")
+    ax2.plot(tt, np.abs(e[lo:hi]), color="#1b6ca8", lw=1.6,
+             label="|e| (lag excess)")
+    ax2.fill_between(tt, 0, np.abs(e[lo:hi]), color="#1b6ca8", alpha=0.12)
+    ax2.set_ylabel("counts")
     ax2.set_xlabel("time from first contact (s)")
+    ax2.legend(fontsize=8, loc="upper left")
     ax2.annotate("≈ 2 N per count", (tt[-1], np.abs(delta[lo:hi]).max() * 0.85),
                  ha="right", fontsize=8, color="#444444")
 

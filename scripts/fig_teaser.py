@@ -122,8 +122,9 @@ def main():
         if want == "success":
             sel = next((e for e in eps if e["placed"]), None)
         else:
-            sel = next((e for e in eps if e["picked"] and not e["placed"]),
-                       None) or next((e for e in eps if not e["placed"]), None)
+            # match the caption: grips and releases WITHOUT lifting
+            sel = next((e for e in eps if not e["picked"]), None) or \
+                  next((e for e in eps if not e["placed"]), None)
         if sel is None:
             sel = eps[0]
         rows.append((label, sel))

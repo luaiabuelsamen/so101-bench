@@ -29,7 +29,7 @@
 %===============================================================================
 
 \begin{abstract}
-Low-cost servo arms ship without force sensing, and standard imitation-learning stacks observe joint positions only, so learned policies close the gripper open-loop against contact. For logs that record synchronized joint-position commands and measured positions, the servo tracking error $\delta = a[t{-}1] - s[t]$ is a contact proxy that can be computed retrospectively, and current stacks discard it. In a pre-registered six-design study at 280 demonstrations on a simulated force-critical task (5 seeds $\times$ 100 paired episodes), every observation that carries this channel outperforms the channel-free base, while predicting $\delta$ as an auxiliary training target does not. The strongest design appends a free-motion-compensated residual, the \emph{lag excess}, and is the only one to outperform an action-history baseline at our pre-declared seed resolution (26.6\% success versus 13.8\%; 95\% CI on the difference $[+2.8, +22.6]$). On 546 episodes across 16 public teleoperation datasets, the pre-registered prediction that successful grasps carry higher $\delta$ fails: under the frozen outcome proxy, high $\delta$ at grasp time is associated with failure, consistent with operators forcing jammed grasps. Code and data at [URL].
+Low-cost servo arms ship without force sensing, and standard imitation-learning stacks observe joint positions only, so learned policies close the gripper open-loop against contact. For logs that record synchronized joint-position commands and measured positions, the servo tracking error $\delta = a[t{-}1] - s[t]$ is a contact proxy that can be computed retrospectively, and current stacks discard it. In a pre-registered six-design study at 280 demonstrations on a simulated force-critical task (5 seeds $\times$ 100 paired episodes), every observation that carries this channel explicitly outperforms the channel-free base, while predicting $\delta$ as an auxiliary training target does not. The strongest design appends a free-motion-compensated residual, the \emph{lag excess}, and is the only one to outperform an action-history baseline at our pre-declared seed resolution (26.6\% success versus 13.8\%; 95\% CI on the difference $[+2.8, +22.6]$). On 546 episodes across 16 public teleoperation datasets, the pre-registered prediction that successful grasps carry higher $\delta$ fails: under the frozen outcome proxy, high $\delta$ at grasp time is associated with failure, consistent with operators forcing jammed grasps. Code and data at [URL].
 \end{abstract}
 
 \keywords{Imitation Learning, Force Estimation, Low-Cost Manipulation}
@@ -64,9 +64,9 @@ measured joint positions, one timestep, nothing else
 
 This default fails at contact. The arms carry no force or tactile sensors,
 so a position-only policy cannot distinguish a seated grasp from an empty
-close: crushed objects, unseated grips, drops during transport. The
-omission is not for lack of signal. The servos are proportional position
-controllers, so when the jaw meets an object the measured position stalls
+close; the failures are crushed objects, unseated grips, and drops during
+transport. The information needed to distinguish these cases is present
+in the logs. The servos are proportional position controllers, so when the jaw meets an object the measured position stalls
 while the command deepens, and the gap reflects the servo's deflection
 under load. The authors of ACT state the physics directly: force ``is
 implicitly defined by the difference between'' leader and follower
@@ -84,7 +84,8 @@ it is recoverable retroactively. Wherever a recorded dataset's
 \texttt{observation.state} in a common frame,
 $\delta = a[t{-}1] - s[t]$ can be computed after the fact; 16 of the 20
 public datasets we targeted passed our frozen inclusion gates
-(Sec.~\ref{sec:corpus}, which also owns the caveats on action semantics).
+(Sec.~\ref{sec:corpus}, which also details the caveats on action
+semantics).
 The same signal supports runtime enforcement from bus telemetry alone
 (Sec.~\ref{sec:guard}).
 
@@ -117,8 +118,8 @@ We summarize our contributions below:
   with a validity envelope and a resolution-vs-margin design rule
   (Sec.~\ref{sec:channel}, \ref{sec:validity}).
   \item A pre-registered six-design observation study at 280
-  demonstrations: observe the channel; predicting it does not substitute
-  (Sec.~\ref{sec:grid}).
+  demonstrations: the channel helps as an input and not as an auxiliary
+  prediction target (Sec.~\ref{sec:grid}).
   \item A pre-registered 16-dataset corpus study associating high
   $\delta$ at grasp with proxy-defined failure (Sec.~\ref{sec:corpus}).
   \item A runtime jaw guard from bus telemetry alone, with paired
@@ -142,11 +143,11 @@ for external-force perception on this servo class, and
 FACTR~2~\citep{oh2026factr2, liu2025factr} feeds estimated external
 torque into behavior cloning on commodity arms. Our lag excess is a
 deliberate special case of FACTR~2's central idea, a linear free-motion
-baseline fit on positions alone; the restriction buys retroactivity,
-since every method above consumes live current or load telemetry, a
-calibration stage, or both. Closest in spirit, \citet{wong2026beyond}
-show by intervention that ACT's force competence rides on the
-leader-follower discrepancy implicit in its action labels; we place the
+baseline fit on positions alone; the restriction makes the signal
+retroactive, since every method above consumes live current or load
+telemetry, a calibration stage, or both. Closest in spirit,
+\citet{wong2026beyond} show by intervention that ACT's force competence
+depends on the leader-follower discrepancy implicit in its action labels; we place the
 signal explicitly in the observation and ask which form a small-data
 policy needs.
 
@@ -168,9 +169,10 @@ workpiece-loss detection from an integrated encoder~\citep{schunk_egk};
 tactile alternatives require added sensing~\citep{calandra2017feeling}.
 Academic safety filters for learned policies~\citep{alshiekh2018shielding,
 hsu2024safetyfilter, brunke2022safelearning} consume a dynamics model, a
-state estimate, or exteroception; the guard of Sec.~\ref{sec:guard} ports
-the industrial telemetry-only tradition to wrap learned policies, a
-position we have not found occupied in that literature.
+state estimate, or exteroception; the guard of Sec.~\ref{sec:guard}
+applies the industrial telemetry-only approach to wrap learned policies,
+and we have not found a filter in the academic literature that runs from
+servo-bus telemetry alone.
 
 %===============================================================================
 
@@ -234,10 +236,13 @@ fails above a crush threshold. A privileged-force oracle passes an
 admission test on this task and, as a negative control, shows that
 standard rigid-block pick-and-place cannot distinguish force-aware from
 force-blind control at all. Demonstrations come from a scripted
-closed-loop teacher with privileged access to simulated grip force (280
-episodes), collected through the guard of Sec.~\ref{sec:guard} so that
-recorded actions are applied commands; the observation arms never see the
-privileged force, only functions of $(q, g)$. Policies are
+closed-loop teacher (280 episodes, success-filtered) whose grip regulator
+acts on the same bus-observable tracking error the arms study, with
+per-episode grip-depth targets drawn from $U[12, 45]$ counts and injected
+recovery perturbations; no privileged force sensing enters collection, the
+teacher's commands are the applied commands by construction, and the
+observation arms see only functions of $(q, g)$. A guard-collected twin
+dataset supports the cost-neutrality result of App.~\ref{app:guard}. Policies are
 ACT~\citep{zhao2023act}, trained for 12{,}000 steps at 96\,px, identical
 across arms; at
 this resolution we cannot rule out a camera deformation cue, but the base
@@ -280,9 +285,9 @@ corpus?}
 \label{sec:validity}
 
 The calibration of Sec.~\ref{sec:channel} holds in the seated
-quasi-static regime; because the simulator implements the servo loop that
+quasi-static regime. Because the simulator implements the servo loop that
 generates $\delta$, these numbers validate the proxy against our own
-plant model, and their value is in mapping where the proxy's structure
+plant model; their value is in mapping where the proxy's structure
 breaks. A stall detector on net travel and lag excess localizes seat
 events, and constructed adversarial negatives (free-space reversals,
 transport shakes) do not fire it within the declared envelope. Coarsening
@@ -340,9 +345,11 @@ $[-6.2, +15.8]$), so whether E's edge comes from the subtraction or from
 $\delta$ at all is not attributable at this budget;
 resolving $E{-}C$ by seed expansion would require roughly 40--60 seeds
 per arm at this $\sigma_{\text{seed}}$, and evaluation is already
-episode-paired. The frozen predictions called E's margin resolved and F's
-marginal; the 5-seed expansion confirmed both, collapsing F's 3-seed
-margin over B and preserving E's. Caveats: five seed means per arm, a
+episode-paired. The frozen prediction named E the sharpest arm and
+expected D, E, and F to clear B; D's share of that prediction failed, as
+reported above. An interim 3-seed analysis flagged E's margin as resolved
+and F's as at-the-floor, and the expansion to 5 seeds confirmed both
+calls, collapsing F's margin over B and preserving E's. Caveats: five seed means per arm, a
 headline difference of similar magnitude to the declared resolution, and
 uncorrected secondary comparisons beyond the designated primary one.
 Within those limits the ordering supports one design statement: at small
@@ -426,10 +433,11 @@ stall and lag-excess seat detection, a 12-count squeeze budget past seat,
 a closing-rate limit) runs from bus signals with no dynamics model, no
 retraining, and no object knowledge; all results are simulated. Paired
 against a competent scripted reference it costs about 3 placements in 30,
-and on three learned checkpoints over identical paired episodes it
-reduces crush events from 85 to 3 of 180 (96\%), with median peak force
-dropping from 33--131\,N to 13--26\,N; it also deletes successes one
-policy earned by over-gripping. Demonstrations must record applied
+and on three learned checkpoints over identical paired episodes its
+first-generation detector (App.~\ref{app:guard}) reduced crush events
+from 85 to 3 of 180 (96\%), with median peak force dropping from
+33--131\,N to 13--26\,N; it also deletes successes one policy earned by
+over-gripping. Demonstrations must record applied
 commands, and wrapped controllers must be closed-loop on contact.
 Details, figure, and integration accounting in App.~\ref{app:guard};
 bench calibration and hardware validation are in progress
@@ -465,12 +473,12 @@ the servo tracking error, valid within a quasi-static envelope our
 simulated plant makes measurable. At 280 demonstrations, policies must
 observe this channel; predicting it as the tested auxiliary target
 recovers none of the gain, and the free-motion-compensated form is the
-best tested instantiation. Across 16 public datasets the channel reads
-operator struggle rather than success, which forecloses free outcome
-labels and motivates enforcement. The open claims are the ones hardware
-decides: bench calibration, retroactive training on real teleop logs, and
-a copycat-style probe of when history helps versus hurts in behavior
-cloning.
+best tested instantiation. Across 16 public datasets high $\delta$ at
+grasp time accompanies failure, which rules out free outcome labels from
+this channel alone and supports its use for enforcement. What remains
+open requires hardware: bench calibration, retroactive training on real
+teleop logs, and a copycat-style probe of when history helps versus hurts
+in behavior cloning.
 
 %===============================================================================
 
@@ -501,8 +509,10 @@ episode. The lag model is a single per-joint scalar through the origin,
 $\hat{K}_j = \sum r\delta / \sum r^2$, fit over frames whose jaw command
 exceeds its 30th percentile; the jaw is the task's only contact, so
 jaw-open frames are free motion. Fitted values span
-$\hat{K} = 0.75$--$1.08$ across joints on our training set, computed once
-on the training demonstrations and frozen. The policy input
+$\hat{K} = 0.74$--$0.84$ across joints on our training set (and move by at
+most $0.09$ when the free-motion percentile criterion is varied from the
+10th to the 50th), computed once on the training demonstrations and
+frozen. The policy input
 is the concatenation
 $[s_{\text{norm}},\, (\delta - \hat{K} r - \mu_\delta)/\sigma_\delta]$;
 joint states and actions are standardized by dataset statistics, while
@@ -527,8 +537,9 @@ state vector, leaving the network otherwise unchanged.
   deepen; the growing gap is the load reading, $\kappa \approx 2$\,N per
   count on the simulated plant. The detector's seat event (marked) fires
   when net travel stalls while lag excess grows. The lower panel plots
-  $\delta$ and the lag excess $e$ over the same frames; $e$ is near zero
-  until contact by construction.}
+  $|\delta|$ and the lag excess $|e|$ over the same frames; $|e|$ sits
+  near zero through the free close by construction and inherits the load
+  reading after contact.}
   \label{fig:mech}
 \end{figure}
 
@@ -539,11 +550,15 @@ The guard combines net-travel stall and lag-excess seat detection, a
 squeeze budget of 12 counts ($\approx +24$\,N on the simulated plant)
 past seat, and a closing-rate limit. Paired against a competent
 reference, the scripted closed-loop teacher places 25/30 through the
-guard versus 28/30 raw at a 39\,N grip (23 vs.\ 26 at the 120\,N tier).
-On three learned checkpoints over identical paired episodes the guard
-reduces crush events from 85 to 3 of 180 across crush tiers
+guard versus 28/30 raw at a 39\,N grip (23 vs.\ 26 at the 120\,N tier);
+these pairing and cost-neutrality results use the full detector above.
+The crush-elimination A/B predates the detector's final revision: on
+three learned checkpoints over identical paired episodes the
+first-generation detector (single-step stall test, 4-count budget)
+reduced crush events from 85 to 3 of 180 across crush tiers
 (Fig.~\ref{fig:guard}), with median peak force dropping from 33--131\,N
-to 13--26\,N. The guard also deletes successes a policy earned by
+to 13--26\,N; a rerun under the final detector is pending alongside
+hardware validation. The guard also deletes successes a policy earned by
 over-gripping: one quantized arm lifted 7/30 episodes at a 131\,N median,
 and those successes vanish under the cap. Integration requires two
 properties: demonstrations must record applied commands rather than
@@ -557,9 +572,10 @@ resolution on the arms measured so far.
   \includegraphics[width=0.75\linewidth]{fig2_guard.png}
   \caption{Crush events per 30 paired episodes for three learned
   checkpoints (base, delta, and a 16-count-quantized delta arm) at two
-  crush tiers, raw (orange) versus guarded (blue). Identical checkpoints
-  and episode seeds; the guard acts only through bus telemetry at
-  runtime. Totals: 85 of 180 raw, 3 of 180 guarded.}
+  crush tiers, raw (orange) versus guarded (blue), under the
+  first-generation detector. Identical checkpoints and episode seeds; the
+  guard acts only through bus telemetry at runtime. Totals: 85 of 180
+  raw, 3 of 180 guarded.}
   \label{fig:guard}
 \end{figure}
 
