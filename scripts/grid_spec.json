@@ -1,0 +1,32 @@
+{
+  "frozen": "2026-08-18, per Modal rails: the launcher reads ONLY this file; any change is a commit",
+  "train": {
+    "root": "/vol/demos_v3",
+    "steps": 12000,
+    "batch": 16,
+    "image_size": 96,
+    "eval_episodes": 100,
+    "eval_crush": [-1],
+    "gpu": "H100",
+    "timeout_s": 5400,
+    "est_cell_minutes": 35,
+    "est_cell_usd": 2.6
+  },
+  "phases": {
+    "dry": [["resid", 0]],
+    "main": [
+      ["resid", 1], ["resid", 2],
+      ["excess", 0], ["excess", 1], ["excess", 2],
+      ["token", 0], ["token", 1], ["token", 2]
+    ],
+    "seeds45": [
+      ["base", 3], ["base", 4],
+      ["base_hist", 3], ["base_hist", 4],
+      ["delta", 3], ["delta", 4],
+      ["resid", 3], ["resid", 4],
+      ["excess", 3], ["excess", 4],
+      ["token", 3], ["token", 4]
+    ]
+  },
+  "note": "guarded column added as a new phase (with demos_v3g280 root) by a later commit, after the dataset uploads; A/B/C seeds 0-2 exist locally and are never re-run"
+}
