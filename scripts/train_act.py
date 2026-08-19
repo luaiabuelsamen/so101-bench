@@ -356,8 +356,11 @@ def train(args):
 
 
 @torch.no_grad()
-def evaluate(policy, data, args):
-    """Closed-loop rollout in the env at the demo control rate (15 Hz)."""
+def evaluate(policy, data, args, shift_fn=None):
+    """Closed-loop rollout in the env at the demo control rate (15 Hz).
+
+    ``shift_fn(env, args.shift)`` mutates plant parameters after env
+    construction (object-property shift evals, roadmap H)."""
     policy.eval()
     quantum = 16.0 if args.arm == "delta_q16" else 1.0
     results = []
@@ -371,6 +374,8 @@ def evaluate(policy, data, args):
             crush_newtons=None if crush <= 0 else crush,
             expert=ExpertConfig(),        # unused; env provides scene/reset
         )
+        if shift_fn is not None:
+            shift_fn(env, getattr(args, "shift", {}))
         n_ok = n_crush = n_drop = 0
         for _ep in range(args.eval_episodes):
             scene = env.scene
