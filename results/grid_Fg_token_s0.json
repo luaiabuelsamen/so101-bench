@@ -1,0 +1,13 @@
+{
+  "arm": "token",
+  "steps": 12000,
+  "results": [
+    {
+      "crush": -1.0,
+      "success": 11,
+      "crushed": 0,
+      "dropped": 30,
+      "episodes": 100
+    }
+  ]
+}

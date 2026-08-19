@@ -569,10 +569,15 @@ budget; fresh episodes) trained at three seeds per arm neither resolves
 any per-arm difference from the original grid nor reproduces its
 point-estimate ordering at that reduced seed count (the lag-excess arm's
 fresh-collection seeds span 7--27 against the original 17--36, Welch's
-$t = 1.6$). Collection-level resampling is therefore a variance component
-above seed variance; the headline comparison of Sec.~\ref{sec:grid} does
-not yet average over it, and hardening it requires seed expansion spanning
-multiple collections.
+$t = 1.6$). Across the six arms the three channel-bearing designs' point
+estimates fell while the three channel-free designs' rose, none
+individually resolving; four marginal statistics of the two collections
+(tracking-error distributions, command floors, command-rate
+distributions, per-episode grip-depth diversity) are indistinguishable,
+so we treat this as unattributed collection-level resampling variance --
+a component above seed variance that the headline comparison of
+Sec.~\ref{sec:grid} does not yet average over, and that hardening it
+requires spanning with seed expansion over multiple collections.
 The crush-elimination A/B predates the detector's final revision: on
 three learned checkpoints over identical paired episodes the
 first-generation detector (single-step stall test, 4-count budget)

@@ -1048,3 +1048,18 @@ the 20-seed expansion must SPAN BOTH collections. The fresh dataset
 itself survived three forensic checks (delta stats, command floors, rate
 distributions identical); the teacher's own closing speed (4 counts/step)
 sits below the rate limiter, so the "guarded" collection was clean stock.
+
+## Replication column complete (2026-08-19 12:19): Fg {11,18,7} = 12.0
+
+Full table (original 5-seed mean -> fresh-collection 3-seed mean):
+A 6.2->7.0, B 13.8->17.7, C 21.8->13.3, D 6.6->7.0, E 26.6->15.3,
+F 21.8->12.0. All three channel arms fell (8.5-11.3), all three
+channel-free arms rose slightly; nothing resolves individually (max
+|t|~1.6). Fourth forensic check on the collections (per-episode depth
+diversity: spread 25.0 counts BOTH, std 9.2 vs 9.0) -- collections are
+marginally indistinguishable across four independent statistics, so the
+pattern is recorded as UNATTRIBUTED collection-level variance; note also
+regression-to-the-mean (original channel arms' seeds 0-2 drew high; their
+seeds 3-4 sit near the replication values). Paper states it at exactly
+this strength (App C + Limitations). D's design requirement stands: seed
+expansion must span both collections.
