@@ -1063,3 +1063,16 @@ regression-to-the-mean (original channel arms' seeds 0-2 drew high; their
 seeds 3-4 sit near the replication values). Paper states it at exactly
 this strength (App C + Limitations). D's design requirement stands: seed
 expansion must span both collections.
+
+## Roadmap H complete (2026-08-19): shift probe favors regulation over script
+
+Best-local-seed checkpoints, n=50/condition, orderings only (frozen
+protocol in scripts/eval_shift.py, committed pre-run). Success/50 across
+{nominal, mass x0.5, mass x1.5, friction x0.5}: A 7/7/7/7 (14 drops every
+time -- outcomes byte-identical under physics shifts: visual-script
+signature); B 9/9/10/9; C 14/19/15/18; E 14/14/17/13. Pre-registered
+question answered: the channel arms' advantage PERSISTS under object-
+property shifts (no collapse toward A; orderings preserved), the behavior
+signature of contact regulation. crush_60N: all arms 0/50 (37-40 crushes)
+-- no differentiation; enforcement remains architectural. E-vs-C not
+probed (best-seed n=50 below resolution; not claimed).
