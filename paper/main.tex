@@ -461,8 +461,10 @@ $E{-}C$ open, so the value of the subtraction itself is not established.
 On real logs, $\delta$ depends on action semantics and timing that the
 corpus study characterizes only up to an integer-offset sweep. The corpus
 success proxy is unvalidated against ground truth, and multi-grasp tasks
-were excluded by design. The channel is valid only seated and
-quasi-static.
+were excluded by design. The grid is measured on one demonstration
+collection; a three-seed recollection (App.~\ref{app:guard}) surfaces
+collection-level resampling variance that our comparisons do not yet
+average over. The channel is valid only seated and quasi-static.
 
 %===============================================================================
 
@@ -561,7 +563,16 @@ occurred and the run measures wiring overhead only. Whether
 threshold-level insensitivity to gentle closes is acceptable
 conservatism or a coverage gap depends on the deployment's hazard model;
 we state it as a measured property of these thresholds.
-% TODO(pending Eg seeds 1-2): recollected-dataset replication sentence.
+
+An independently recollected demonstration set (same teacher, recipe, and
+budget; fresh episodes) trained at three seeds per arm neither resolves
+any per-arm difference from the original grid nor reproduces its
+point-estimate ordering at that reduced seed count (the lag-excess arm's
+fresh-collection seeds span 7--27 against the original 17--36, Welch's
+$t = 1.6$). Collection-level resampling is therefore a variance component
+above seed variance; the headline comparison of Sec.~\ref{sec:grid} does
+not yet average over it, and hardening it requires seed expansion spanning
+multiple collections.
 The crush-elimination A/B predates the detector's final revision: on
 three learned checkpoints over identical paired episodes the
 first-generation detector (single-step stall test, 4-count budget)

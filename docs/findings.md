@@ -1032,3 +1032,19 @@ carries a collection-fragility caveat. Nothing written until they land.
 
 Main grid, corpus study, and channel characterization are untouched: the
 guard appears nowhere in those pipelines.
+
+## Eg complete: the mixed branch (2026-08-19 ~06:50)
+
+Eg = {7, 12, 27}, mean 15.3, vs E = {36, 32, 21, 17, 27}, mean 26.6.
+Welch t = 1.6 -> UNRESOLVED; s2 = 27 sits squarely in E's range, killing
+the fragility-catastrophe branch. Replication column vs originals:
+A +0.8, B +3.9, C -8.5, D +0.4, E -11.3 -- nothing resolves individually,
+AND the fresh collection's point ordering at 3 seeds (Bg 17.7 > Eg 15.3 >
+Cg 13.3) does not reproduce the original. Verdict written into the paper
+(App C + Limitations): collection-level resampling is a variance
+component ABOVE sigma_seed that the headline does not yet average over;
+E-B stands as published on its declared dataset; roadmap D upgraded --
+the 20-seed expansion must SPAN BOTH collections. The fresh dataset
+itself survived three forensic checks (delta stats, command floors, rate
+distributions identical); the teacher's own closing speed (4 counts/step)
+sits below the rate limiter, so the "guarded" collection was clean stock.
