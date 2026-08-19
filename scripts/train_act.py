@@ -133,6 +133,13 @@ class FastChunkDataset(torch.utils.data.Dataset):
                 denom = float((r * r).sum())
                 self.k_hat[j] = float((r * d_).sum() / denom) if denom > 1e-6 else 0.0
 
+        if arm == "oracle":
+            # ceiling arm: privileged true grip force as input, fixed scale
+            # 40 N (forces 0-285 N -> ~0-7). Bounds what ANY observation of
+            # contact could deliver on this task.
+            self.F = np.asarray(
+                hf["grip_force_N"], dtype=np.float32).reshape(-1)[:len(self.S)] / 40.0
+
         if arm == "token":
             # F (event_token): the frozen guard-v4 DETECTOR (no cap, no rate
             # limit -- recorded commands are already the applied ones) run
@@ -189,6 +196,8 @@ class FastChunkDataset(torch.utils.data.Dataset):
             state = np.concatenate(
                 [s_n, np.full(6, self.seat[i], np.float32)]
             )
+        elif self.arm == "oracle":
+            state = np.concatenate([s_n, np.full(6, self.F[i], np.float32)])
         else:
             state = np.concatenate(
                 [s_n, (delta - self.d_mean) / self.d_std]
@@ -275,7 +284,8 @@ def train(args):
     ds = load_dataset(args.root)
     quantum = 16.0 if args.arm == "delta_q16" else 1.0
     mode = {"base": "base", "base_hist": "hist", "resid": "resid",
-            "excess": "excess", "token": "token"}.get(args.arm, "delta")
+            "excess": "excess", "token": "token",
+            "oracle": "oracle"}.get(args.arm, "delta")
     wrapped = FastChunkDataset(ds, mode, quantum,
                                max_episodes=args.max_episodes)
     state_dim = 6 if args.arm in ("base", "resid") else 12
@@ -408,6 +418,9 @@ def evaluate(policy, data, args, shift_fn=None):
                     gd(float(s[5]), jaw_prev)
                     flag = 0.0 if gd.seat_jaw is None else 1.0
                     s_in = torch.cat([s_n, torch.full((6,), flag)])
+                elif args.arm == "oracle":
+                    f = float(scene.grip_force()) / 40.0
+                    s_in = torch.cat([s_n, torch.full((6,), f)])
                 else:
                     d = (a_prev - s) if a_prev is not None else torch.zeros_like(s)
                     d_n = (d - torch.from_numpy(data.d_mean)) / torch.from_numpy(data.d_std)
@@ -457,7 +470,7 @@ def main():
     parser.add_argument(
         "--arm",
         choices=("base", "delta", "delta_q16", "base_hist",
-                 "resid", "excess", "token"),
+                 "resid", "excess", "token", "oracle"),
         required=True,
     )
     parser.add_argument("--image-size", type=int, default=96)
