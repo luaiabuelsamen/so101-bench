@@ -1004,3 +1004,31 @@ closed-loop policy impact, which is arm E itself.
   conference Nov 9-12 Austin, workshop day Nov 9 -> CoRL-26 workshop CFPs
   are the imminent rule-6 target; "CoRL main track" = CoRL 2027 (~May).
   Two-track plan: workshop ship first, rev-3 A+B+D program aims at 2027.
+
+## Guard detector is inert on the gentle teacher; "guarded" datasets are
+replications (2026-08-19, ~01:00, Rule-1 chase of Eg s0 = 7)
+
+Evidence chain: Eg s0 trained normally (loss 0.059) with sane K_hat;
+demos_v3g280's hold-phase |delta| (median 30) and command floors are
+IDENTICAL to demos_v3 -> no capping occurred; live instrumented episode:
+guard armed, seat NEVER latched on the force-mode teacher (its fine pass
+moves ~0.3 counts/frame, under both the net-close and rate gates; persist
+compounds it). Re-reading the old pairing table confirms the guard was
+inert there too (39.6 N raw vs 38.9 N "guarded"): the "3-in-30
+interference" was seed noise around zero enforcement.
+
+Consequences: (1) demos_v3g-* are plain re-collections -> the "guarded
+column" is a COLLECTION-REPLICATION column; Ag/Bg/Cg/Dg matching their
+twins is a replication result. (2) Trained-through-guard remains UNTESTED
+(needs a detector variant sensitive to gentle closes). (3) The paper's
+guard section corrected: enforcement claims stand where the detector
+fires (policies 99->40 N; clamp 360->10-28 N; crush A/Bs); the
+teacher-pairing row now reported as measuring wiring overhead only, the
+threshold insensitivity stated as a property with its ambiguity named.
+(4) Floor-twin result relabeled replication; conclusion unchanged.
+(5) OPEN AND URGENT: Eg s0 = 7 is now a fresh-collection replication draw
+of the headline arm, ~2 sigma below E's mean. Eg s1/s2 decide whether E
+carries a collection-fragility caveat. Nothing written until they land.
+
+Main grid, corpus study, and channel characterization are untouched: the
+guard appears nowhere in those pipelines.

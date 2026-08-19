@@ -241,8 +241,7 @@ acts on the same bus-observable tracking error the arms study, with
 per-episode grip-depth targets drawn from $U[12, 45]$ counts and injected
 recovery perturbations; no privileged force sensing enters collection, the
 teacher's commands are the applied commands by construction, and the
-observation arms see only functions of $(q, g)$. A guard-collected twin
-dataset supports the cost-neutrality result of App.~\ref{app:guard}. Policies are
+observation arms see only functions of $(q, g)$. Policies are
 ACT~\citep{zhao2023act}, trained for 12{,}000 steps at 96\,px, identical
 across arms; at
 this resolution we cannot rule out a camera deformation cue, but the base
@@ -432,8 +431,10 @@ The same telemetry supports enforcement. A 40-line jaw guard (net-travel
 stall and lag-excess seat detection, a 12-count squeeze budget past seat,
 a closing-rate limit) runs from bus signals with no dynamics model, no
 retraining, and no object knowledge; all results are simulated. Paired
-against a competent scripted reference it costs about 3 placements in 30,
-and on three learned checkpoints over identical paired episodes its
+its detection thresholds make it insensitive to closes slower than its
+rate gates, so it engages on aggressive closers and not on the gentle
+scripted teacher (App.~\ref{app:guard}), and on three learned checkpoints
+over identical paired episodes its
 first-generation detector (App.~\ref{app:guard}) reduced crush events
 from 85 to 3 of 180 (96\%), with median peak force dropping from
 33--131\,N to 13--26\,N; it also deletes successes one policy earned by
@@ -548,10 +549,19 @@ state vector, leaving the network otherwise unchanged.
 
 The guard combines net-travel stall and lag-excess seat detection, a
 squeeze budget of 12 counts ($\approx +24$\,N on the simulated plant)
-past seat, and a closing-rate limit. Paired against a competent
-reference, the scripted closed-loop teacher places 25/30 through the
-guard versus 28/30 raw at a 39\,N grip (23 vs.\ 26 at the 120\,N tier);
-these pairing and cost-neutrality results use the full detector above.
+past seat, and a closing-rate limit. Two regimes follow from the
+detector's thresholds. On aggressive closers it binds: learned policies
+commanding fast or deep closes are capped near 40\,N against raw peaks of
+99--127\,N, and an open-loop clamp reference commanding 360\,N grips is
+held to 10--28\,N. On the gentle closed-loop teacher ($\sim$0.3 counts
+per frame in its fine pass, below both detection gates) it never fires: a
+paired run shows 25/30 placements wrapped versus 28/30 raw at
+statistically indistinguishable $\sim$39\,N grips, i.e.\ no enforcement
+occurred and the run measures wiring overhead only. Whether
+threshold-level insensitivity to gentle closes is acceptable
+conservatism or a coverage gap depends on the deployment's hazard model;
+we state it as a measured property of these thresholds.
+% TODO(pending Eg seeds 1-2): recollected-dataset replication sentence.
 The crush-elimination A/B predates the detector's final revision: on
 three learned checkpoints over identical paired episodes the
 first-generation detector (single-step stall test, 4-count budget)
@@ -564,8 +574,9 @@ and those successes vanish under the cap. Integration requires two
 properties: demonstrations must record applied commands rather than
 intentions, and any wrapped controller must be closed-loop on contact,
 since the rate limiter breaks open-loop grasp timing by construction.
-Collecting demonstrations through the guard is cost-neutral within seed
-resolution on the arms measured so far.
+Collecting demonstrations under \emph{active} guard enforcement would
+require a detector variant sensitive to gentle closes and remains
+untested.
 
 \begin{figure}[h]
   \centering
