@@ -455,8 +455,12 @@ and contact model until bench calibration lands
 (App.~\ref{app:hardware}). The task is constructed to require force-band
 control, so the grid measures observation design on a force-critical
 task, not manipulation in general. The lag-excess model is a first-order
-correction; richer free-motion predictors~\citep{oh2026factr2} may
-compensate better and are untested. The seed budget leaves $C{-}B$ and
+correction; an offline ladder of richer free-motion predictors (intercept,
+direction and acceleration terms, short causal FIR) improves held-out
+free-motion residual by at most 1.9\% over the scalar model on the jaw,
+so the linear choice is not leaving obvious compensation on the table,
+though learned predictors in the style of~\citet{oh2026factr2} remain
+untested as policy inputs. The seed budget leaves $C{-}B$ and
 $E{-}C$ open, so the value of the subtraction itself is not established.
 On real logs, $\delta$ depends on action semantics and timing that the
 corpus study characterizes only up to an integer-offset sweep. The corpus
