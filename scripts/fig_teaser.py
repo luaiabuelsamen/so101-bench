@@ -111,9 +111,9 @@ def main():
 
     rows = []
     for label, ckpt, arm, want in (
-        ("stock observation: joint positions only — fails",
+        ("stock observation: joint positions only",
          "checkpoints/grid_A_base_s0/base", "base", "fail"),
-        ("+ δ − lag (recoverable from the same log) — succeeds",
+        ("with lag-excess channel, computed from the same log",
          "checkpoints/modal_E_s0/excess", "excess", "success"),
     ):
         pol = ACTPolicy.from_pretrained(ckpt).to(DEV).eval()

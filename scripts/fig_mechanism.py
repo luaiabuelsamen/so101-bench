@@ -93,12 +93,12 @@ def main():
     ax1.annotate("free close:\nservo tracks command", (tt[k], meas[lo + k]),
                  fontsize=8, color="#1b6ca8", ha="left",
                  xytext=(10, -26), textcoords="offset points")
-    ax1.annotate("jaw held by object;\ncommand deepens → gap = force",
+    ax1.annotate("jaw held by object;\ncommand deepens, gap tracks load",
                  (tt[-1] * 0.55, meas[hi - 1]), fontsize=8, color="#1b6ca8",
                  ha="left", xytext=(0, 22), textcoords="offset points")
 
-    ax1.set_title("The observation the log already contains: "
-                  "δ = command − measured", fontsize=10)
+    ax1.annotate("simulation", xy=(0.99, 0.03), xycoords="axes fraction",
+                 ha="right", va="bottom", fontsize=8, color="gray")
     fig.tight_layout()
     out = Path("figures/paper/fig_mech.png")
     fig.savefig(out, dpi=200)
