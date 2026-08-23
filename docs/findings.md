@@ -1076,3 +1076,13 @@ property shifts (no collapse toward A; orderings preserved), the behavior
 signature of contact regulation. crush_60N: all arms 0/50 (37-40 crushes)
 -- no differentiation; enforcement remains architectural. E-vs-C not
 probed (best-seed n=50 below resolution; not claimed).
+
+## Oracle ceiling arm complete (2026-08-22): E is at the ceiling
+
+Privileged TRUE grip force as input (fixed 40 N scale), same demos_v3,
+3 seeds: O = {15, 33, 37}, mean 28.3 +- 11.7. O-E = +1.7 (t = 0.23):
+indistinguishable. O-A = +22.1 (t = 3.05): the ceiling is real and far
+from base. Reading: the lag excess recovers essentially all of what a
+perfect contact observation delivers on this task at this budget -- the
+residual is close to a sufficient statistic; D's null sharpens (even the
+true signal helps only as an INPUT). Caveat: 3 seeds, one collection.
