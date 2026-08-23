@@ -1,0 +1,349 @@
+diff --git a/src/lerobot/datasets/pyav_utils.py b/src/lerobot/datasets/pyav_utils.py
+index d291f8b40..78c992f38 100644
+--- a/src/lerobot/datasets/pyav_utils.py
++++ b/src/lerobot/datasets/pyav_utils.py
+@@ -99,7 +99,9 @@ def _check_option_value(vcodec: str, label: str, value: Any, opt: av.option.Opti
+             )
+ 
+         # Check integer type compatibility
+-        if type_name in FFMPEG_INTEGER_OPTION_TYPES and not num_val.is_integer():
++        # float() coercion is required: int.is_integer() only exists on Python 3.12+,
++        # and num_val is a bare int whenever the option came in as one.
++        if type_name in FFMPEG_INTEGER_OPTION_TYPES and not float(num_val).is_integer():
+             raise ValueError(
+                 f"{label}={num_val!r} must be an integer for codec {vcodec!r} "
+                 f"(FFmpeg option {opt.name!r} is {type_name}); float values are not allowed."
+diff --git a/src/lerobot/datasets/streaming_dataset.py b/src/lerobot/datasets/streaming_dataset.py
+index 3c1e4a73c..cce323831 100644
+--- a/src/lerobot/datasets/streaming_dataset.py
++++ b/src/lerobot/datasets/streaming_dataset.py
+@@ -20,6 +20,9 @@ from pathlib import Path
+ import datasets
+ import numpy as np
+ import torch
++from typing import Generic, TypeVar
++
++T = TypeVar('T')
+ from datasets import load_dataset
+ 
+ from lerobot.utils.constants import HF_LEROBOT_HOME, LOOKAHEAD_BACKTRACKTABLE, LOOKBACK_BACKTRACKTABLE
+@@ -55,7 +58,7 @@ class LookAheadError(Exception):
+     pass
+ 
+ 
+-class Backtrackable[T]:
++class Backtrackable(Generic[T]):
+     """
+     Wrap any iterator/iterable so you can step back up to `history` items
+     and look ahead up to `lookahead` items.
+diff --git a/src/lerobot/motors/motors_bus.py b/src/lerobot/motors/motors_bus.py
+index 4688eaa7f..8fc324b10 100644
+--- a/src/lerobot/motors/motors_bus.py
++++ b/src/lerobot/motors/motors_bus.py
+@@ -48,8 +48,8 @@ else:
+ from lerobot.utils.decorators import check_if_already_connected, check_if_not_connected
+ from lerobot.utils.utils import enter_pressed, move_cursor_up
+ 
+-type NameOrID = str | int
+-type Value = int | float
++NameOrID = str | int
++Value = int | float
+ 
+ logger = logging.getLogger(__name__)
+ 
+diff --git a/src/lerobot/policies/__init__.py b/src/lerobot/policies/__init__.py
+index 3a6b8e5d2..aff4dfc9a 100644
+--- a/src/lerobot/policies/__init__.py
++++ b/src/lerobot/policies/__init__.py
+@@ -16,21 +16,45 @@ from lerobot.utils.action_interpolator import ActionInterpolator as ActionInterp
+ 
+ from .act.configuration_act import ACTConfig as ACTConfig
+ from .diffusion.configuration_diffusion import DiffusionConfig as DiffusionConfig
+-from .eo1.configuration_eo1 import EO1Config as EO1Config
++try:
++    from .eo1.configuration_eo1 import EO1Config as EO1Config
++except ImportError:  # optional: needs a newer transformers
++    EO1Config = None
+ from .factory import get_policy_class, make_policy, make_policy_config, make_pre_post_processors
+ from .gaussian_actor.configuration_gaussian_actor import GaussianActorConfig as GaussianActorConfig
+-from .groot.configuration_groot import GrootConfig as GrootConfig
+-from .multi_task_dit.configuration_multi_task_dit import MultiTaskDiTConfig as MultiTaskDiTConfig
+-from .pi0.configuration_pi0 import PI0Config as PI0Config
+-from .pi0_fast.configuration_pi0_fast import PI0FastConfig as PI0FastConfig
+-from .pi05.configuration_pi05 import PI05Config as PI05Config
++try:
++    from .groot.configuration_groot import GrootConfig as GrootConfig
++except ImportError:  # optional: needs a newer transformers
++    GrootConfig = None
++try:
++    from .multi_task_dit.configuration_multi_task_dit import MultiTaskDiTConfig as MultiTaskDiTConfig
++except ImportError:  # optional: needs a newer transformers
++    MultiTaskDiTConfig = None
++try:
++    from .pi0.configuration_pi0 import PI0Config as PI0Config
++except ImportError:  # optional: needs a newer transformers
++    PI0Config = None
++try:
++    from .pi0_fast.configuration_pi0_fast import PI0FastConfig as PI0FastConfig
++except ImportError:  # optional: needs a newer transformers
++    PI0FastConfig = None
++try:
++    from .pi05.configuration_pi05 import PI05Config as PI05Config
++except ImportError:  # optional: needs a newer transformers
++    PI05Config = None
+ from .pretrained import PreTrainedPolicy as PreTrainedPolicy
+ from .smolvla.configuration_smolvla import SmolVLAConfig as SmolVLAConfig
+ from .tdmpc.configuration_tdmpc import TDMPCConfig as TDMPCConfig
+ from .utils import make_robot_action, prepare_observation_for_inference
+ from .vqbet.configuration_vqbet import VQBeTConfig as VQBeTConfig
+-from .wall_x.configuration_wall_x import WallXConfig as WallXConfig
+-from .xvla.configuration_xvla import XVLAConfig as XVLAConfig
++try:
++    from .wall_x.configuration_wall_x import WallXConfig as WallXConfig
++except ImportError:  # optional: needs a newer transformers
++    WallXConfig = None
++try:
++    from .xvla.configuration_xvla import XVLAConfig as XVLAConfig
++except ImportError:  # optional: needs a newer transformers
++    XVLAConfig = None
+ 
+ # NOTE: Policy modeling classes (e.g., GaussianActorPolicy) are intentionally NOT re-exported here.
+ # They have heavy optional dependencies and are loaded lazily via get_policy_class().
+diff --git a/src/lerobot/policies/factory.py b/src/lerobot/policies/factory.py
+index 8937bc6ae..ad338342b 100644
+--- a/src/lerobot/policies/factory.py
++++ b/src/lerobot/policies/factory.py
+@@ -18,7 +18,8 @@ from __future__ import annotations
+ 
+ import importlib
+ import logging
+-from typing import TYPE_CHECKING, Any, TypedDict, Unpack
++from typing import TYPE_CHECKING, Any, TypedDict
++from typing_extensions import Unpack
+ 
+ import torch
+ 
+@@ -46,19 +47,40 @@ from lerobot.utils.feature_utils import dataset_to_policy_features
+ 
+ from .act.configuration_act import ACTConfig
+ from .diffusion.configuration_diffusion import DiffusionConfig
+-from .eo1.configuration_eo1 import EO1Config
++try:
++    from .eo1.configuration_eo1 import EO1Config
++except ImportError:  # optional: needs a newer transformers
++    EO1Config = None
+ from .gaussian_actor.configuration_gaussian_actor import GaussianActorConfig
+-from .groot.configuration_groot import GrootConfig
+-from .multi_task_dit.configuration_multi_task_dit import MultiTaskDiTConfig
+-from .pi0.configuration_pi0 import PI0Config
+-from .pi05.configuration_pi05 import PI05Config
++try:
++    from .groot.configuration_groot import GrootConfig
++except ImportError:  # optional: needs a newer transformers
++    GrootConfig = None
++try:
++    from .multi_task_dit.configuration_multi_task_dit import MultiTaskDiTConfig
++except ImportError:  # optional: needs a newer transformers
++    MultiTaskDiTConfig = None
++try:
++    from .pi0.configuration_pi0 import PI0Config
++except ImportError:  # optional: needs a newer transformers
++    PI0Config = None
++try:
++    from .pi05.configuration_pi05 import PI05Config
++except ImportError:  # optional: needs a newer transformers
++    PI05Config = None
+ from .pretrained import PreTrainedPolicy
+ from .smolvla.configuration_smolvla import SmolVLAConfig
+ from .tdmpc.configuration_tdmpc import TDMPCConfig
+ from .utils import validate_visual_features_consistency
+ from .vqbet.configuration_vqbet import VQBeTConfig
+-from .wall_x.configuration_wall_x import WallXConfig
+-from .xvla.configuration_xvla import XVLAConfig
++try:
++    from .wall_x.configuration_wall_x import WallXConfig
++except ImportError:  # optional: needs a newer transformers
++    WallXConfig = None
++try:
++    from .xvla.configuration_xvla import XVLAConfig
++except ImportError:  # optional: needs a newer transformers
++    XVLAConfig = None
+ 
+ 
+ def _reconnect_relative_absolute_steps(
+@@ -519,6 +541,9 @@ def make_policy(
+         # Load a pretrained policy and override the config if needed (for example, if there are inference-time
+         # hyperparameters that we want to vary).
+         kwargs["pretrained_name_or_path"] = cfg.pretrained_path
++        # Temporarily disable strict loading due to known transformers version incompatibility
++        # TODO: Re-enable once weight conversion is implemented
++        kwargs["strict"] = False
+         policy = policy_cls.from_pretrained(**kwargs)
+     elif cfg.pretrained_path and cfg.use_peft:
+         # Load a pretrained PEFT model on top of the policy. The pretrained path points to the folder/repo
+diff --git a/src/lerobot/policies/pi0/modeling_pi0.py b/src/lerobot/policies/pi0/modeling_pi0.py
+index 510af0796..259270a10 100644
+--- a/src/lerobot/policies/pi0/modeling_pi0.py
++++ b/src/lerobot/policies/pi0/modeling_pi0.py
+@@ -20,7 +20,8 @@ import logging
+ import math
+ from collections import deque
+ from pathlib import Path
+-from typing import TYPE_CHECKING, Literal, TypedDict, Unpack
++from typing import TYPE_CHECKING, Literal, TypedDict
++from typing_extensions import Unpack
+ 
+ import torch
+ import torch.nn.functional as F  # noqa: N812
+diff --git a/src/lerobot/policies/pi05/modeling_pi05.py b/src/lerobot/policies/pi05/modeling_pi05.py
+index bb206d608..ba476dcfb 100644
+--- a/src/lerobot/policies/pi05/modeling_pi05.py
++++ b/src/lerobot/policies/pi05/modeling_pi05.py
+@@ -20,7 +20,8 @@ import logging
+ import math
+ from collections import deque
+ from pathlib import Path
+-from typing import TYPE_CHECKING, Literal, TypedDict, Unpack
++from typing import TYPE_CHECKING, Literal, TypedDict
++from typing_extensions import Unpack
+ 
+ import torch
+ import torch.nn.functional as F  # noqa: N812
+diff --git a/src/lerobot/policies/pi0_fast/modeling_pi0_fast.py b/src/lerobot/policies/pi0_fast/modeling_pi0_fast.py
+index d9342eb24..7582aef21 100644
+--- a/src/lerobot/policies/pi0_fast/modeling_pi0_fast.py
++++ b/src/lerobot/policies/pi0_fast/modeling_pi0_fast.py
+@@ -18,7 +18,8 @@ import builtins
+ import logging
+ from collections import deque
+ from pathlib import Path
+-from typing import TYPE_CHECKING, Literal, TypedDict, Unpack
++from typing import TYPE_CHECKING, Literal, TypedDict
++from typing_extensions import Unpack
+ 
+ import numpy as np
+ import torch
+diff --git a/src/lerobot/policies/pretrained.py b/src/lerobot/policies/pretrained.py
+index 724f920f3..6fc251fec 100644
+--- a/src/lerobot/policies/pretrained.py
++++ b/src/lerobot/policies/pretrained.py
+@@ -19,7 +19,8 @@ import os
+ from importlib.resources import files
+ from pathlib import Path
+ from tempfile import TemporaryDirectory
+-from typing import TypedDict, TypeVar, Unpack
++from typing import TypedDict, TypeVar
++from typing_extensions import Unpack
+ 
+ import packaging
+ import safetensors
+diff --git a/src/lerobot/policies/smolvla/modeling_smolvla.py b/src/lerobot/policies/smolvla/modeling_smolvla.py
+index 8fd60c1fc..00bf248de 100644
+--- a/src/lerobot/policies/smolvla/modeling_smolvla.py
++++ b/src/lerobot/policies/smolvla/modeling_smolvla.py
+@@ -54,7 +54,8 @@ policy = SmolVLAPolicy.from_pretrained("lerobot/smolvla_base")
+ 
+ import math
+ from collections import deque
+-from typing import TypedDict, Unpack
++from typing import TypedDict
++from typing_extensions import Unpack
+ 
+ import torch
+ import torch.nn.functional as F  # noqa: N812
+diff --git a/src/lerobot/processor/pipeline.py b/src/lerobot/processor/pipeline.py
+index 2b949d5cb..57d33ef51 100644
+--- a/src/lerobot/processor/pipeline.py
++++ b/src/lerobot/processor/pipeline.py
+@@ -39,7 +39,7 @@ from collections.abc import Callable, Iterable, Sequence
+ from copy import deepcopy
+ from dataclasses import dataclass, field
+ from pathlib import Path
+-from typing import Any, TypedDict, TypeVar, cast
++from typing import Any, Generic, TypedDict, TypeVar, cast
+ 
+ import torch
+ from huggingface_hub import hf_hub_download
+@@ -252,7 +252,7 @@ class ProcessorMigrationError(Exception):
+ 
+ 
+ @dataclass
+-class DataProcessorPipeline[TInput, TOutput](HubMixin):
++class DataProcessorPipeline(HubMixin, Generic[TInput, TOutput]):
+     """A sequential pipeline for processing data, integrated with the Hugging Face Hub.
+ 
+     This class chains together multiple `ProcessorStep` instances to form a complete
+diff --git a/src/lerobot/robots/so_follower/so_follower.py b/src/lerobot/robots/so_follower/so_follower.py
+index 0651f566c..b4f662a2b 100644
+--- a/src/lerobot/robots/so_follower/so_follower.py
++++ b/src/lerobot/robots/so_follower/so_follower.py
+@@ -66,6 +66,12 @@ class SOFollower(Robot):
+     def _motors_ft(self) -> dict[str, type]:
+         return {f"{motor}.pos": float for motor in self.bus.motors}
+ 
++    @property
++    def _loads_ft(self) -> dict[str, type]:
++        # Present_Load is auto-decoded by the Feetech bus into signed values
++        # (approx tenths of % of max torque, sign = direction of effort).
++        return {f"{motor}.load": float for motor in self.bus.motors}
++
+     @property
+     def _cameras_ft(self) -> dict[str, tuple]:
+         return {
+@@ -74,7 +80,7 @@ class SOFollower(Robot):
+ 
+     @cached_property
+     def observation_features(self) -> dict[str, type | tuple]:
+-        return {**self._motors_ft, **self._cameras_ft}
++        return {**self._motors_ft, **self._loads_ft, **self._cameras_ft}
+ 
+     @cached_property
+     def action_features(self) -> dict[str, type]:
+@@ -178,11 +184,18 @@ class SOFollower(Robot):
+     def get_observation(self) -> RobotObservation:
+         # Read arm position
+         start = time.perf_counter()
+-        obs_dict = self.bus.sync_read("Present_Position")
+-        obs_dict = {f"{motor}.pos": val for motor, val in obs_dict.items()}
++        pos = self.bus.sync_read("Present_Position")
++        obs_dict = {f"{motor}.pos": val for motor, val in pos.items()}
+         dt_ms = (time.perf_counter() - start) * 1e3
+         logger.debug(f"{self} read state: {dt_ms:.1f}ms")
+ 
++        # Read motor load (signed; firmware reports tenths of % of max torque)
++        start = time.perf_counter()
++        load = self.bus.sync_read("Present_Load")
++        obs_dict.update({f"{motor}.load": val for motor, val in load.items()})
++        dt_ms = (time.perf_counter() - start) * 1e3
++        logger.debug(f"{self} read load: {dt_ms:.1f}ms")
++
+         # Capture images from cameras
+         for cam_key, cam in self.cameras.items():
+             start = time.perf_counter()
+diff --git a/src/lerobot/utils/io_utils.py b/src/lerobot/utils/io_utils.py
+index e037b412c..4b08ad3e0 100644
+--- a/src/lerobot/utils/io_utils.py
++++ b/src/lerobot/utils/io_utils.py
+@@ -16,11 +16,13 @@
+ import json
+ import logging
+ from pathlib import Path
++from typing import TypeVar
+ from typing import Any
+ 
+ logger = logging.getLogger(__name__)
+ 
+ JsonLike = str | int | float | bool | None | list["JsonLike"] | dict[str, "JsonLike"] | tuple["JsonLike", ...]
++T = TypeVar('T', bound=JsonLike)
+ 
+ 
+ def load_json(fpath: Path) -> Any:
+@@ -90,7 +92,7 @@ def write_video(video_path: str | Path, stacked_frames: list, fps: int) -> None:
+             container.mux(packet)
+ 
+ 
+-def deserialize_json_into_object[T: JsonLike](fpath: Path, obj: T) -> T:
++def deserialize_json_into_object(fpath: Path, obj: T) -> T:
+     """
+     Loads the JSON data from `fpath` and recursively fills `obj` with the
+     corresponding values (strictly matching structure and types).
