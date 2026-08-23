@@ -56,6 +56,8 @@ case "$cmd" in
   record)
     NAME="${2:?usage: arms.sh record NAME N_EPISODES}"
     N="${3:?usage: arms.sh record NAME N_EPISODES}"
+    # keys during recording: RIGHT-ARROW = next episode, LEFT-ARROW = redo,
+    # ESC = finish. Local only (push_to_hub=false).
     exec $PY -m lerobot.scripts.lerobot_record \
       --robot.type=so101_follower --robot.port="$FOLLOWER" --robot.id="$FID" \
       --robot.cameras="{\"front\": {\"type\": \"opencv\", \"index_or_path\": \"$CAM\", \"width\": 640, \"height\": 480, \"fps\": 30}}" \
@@ -63,7 +65,10 @@ case "$cmd" in
       --dataset.fps=30 \
       --dataset.repo_id="luaia/$NAME" \
       --dataset.root="$BENCH/data/real/$NAME" \
+      --dataset.single_task="pick up the object and place it in the target zone" \
       --dataset.num_episodes="$N" \
+      --dataset.episode_time_s=25 \
+      --dataset.reset_time_s=8 \
       --dataset.push_to_hub=false
     ;;
   staircase)
