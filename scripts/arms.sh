@@ -27,7 +27,8 @@ cd "$LEROBOT"
 
 case "${1:-help}" in
   ports)
-    ls -l /dev/ttyACM* /dev/ttyUSB* 2>/dev/null || echo "no serial devices"
+    found=$(ls -l /dev/ttyACM* /dev/ttyUSB* 2>/dev/null || true)
+    [ -n "$found" ] && echo "$found" || echo "no serial devices"
     ;;
   calibrate-leader)
     exec $PY src/lerobot/scripts/lerobot_calibrate.py \
