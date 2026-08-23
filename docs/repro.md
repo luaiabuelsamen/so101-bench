@@ -77,3 +77,32 @@ MuJoCo ≥3.0 EGL; exact training hyperparameters in
 file). Training hardware: Jetson AGX Orin (local cells) and H100 (Modal;
 `scripts/modal_grid.py`), bit-nonreproducible across GPUs — hence
 seed-level statistics rather than run-level.
+
+## Checkpoint availability (2026-08-23)
+
+Checkpoints are not git-tracked and were never pushed to the Hub, so the copies
+under `checkpoints/` are the only ones. A disk-pressure cleanup on 2026-08-22
+kept seven and deleted the rest, including `checkpoints/modal_outputs/`.
+
+Present: `grid_A_base_s1`, `grid_B_base_hist_s1`, `act_v3full_delta_s1`,
+`modal_E_s0`, `grid_O_oracle_s{0,1,2}`.
+
+One consequence to know about before trusting a `make figures`-style rerun:
+
+- **`grid_A_base_s0` is gone**, and `scripts/fig_teaser.py:115` is the only
+  consumer. Fig. 1 therefore cannot be re-rendered as-is; the committed
+  `figures/paper/fig_teaser.png` is intact and the paper builds. Recovering it
+  means retraining that one cell (`scripts/run_grid.sh`, the base arm, the
+  cheapest in the grid) and accepting a non-identical checkpoint -- training is
+  bit-nonreproducible across GPUs, so the re-rendered episode will differ even
+  at the same seed. The seed-level numbers are unaffected:
+  `results/grid_A_base_s0.json` was never touched.
+
+Every other figure script resolves: `fig_mechanism.py` needs only
+`modal_E_s0/excess/norm_stats.npz`, and `fig_grid.py` / `fig_ksweep.py` /
+`corpus_delta_outcome.py` read `results/*.json` rather than weights.
+
+`scripts/fig_teaser.py` carries a "simulation" stamp as of this commit, matching
+`fig_mechanism.py` and `fig_grid.py`. It will appear the next time the figure is
+regenerated, not in the committed PNG. `fig_ksweep.py` is deliberately
+unstamped: it plots the public teleoperation corpus, which is real-robot data.

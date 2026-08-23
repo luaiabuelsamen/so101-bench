@@ -158,6 +158,8 @@ def main():
             axt.set_xlabel("time from contact (s)", fontsize=8)
         else:
             axt.tick_params(labelbottom=False)
+    fig.text(0.995, 0.004, "simulation", ha="right", va="bottom",
+             fontsize=8, color="gray")
     out = Path("figures/paper/fig_teaser.png")
     fig.savefig(out, dpi=180, bbox_inches="tight")
     print(f"wrote {out}")
