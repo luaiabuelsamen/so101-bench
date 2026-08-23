@@ -13,6 +13,7 @@
 # LEADER=/dev/ttyACM1. If the wrong arm moves in teleop, the USB enumeration
 # swapped -- override with:  FOLLOWER=/dev/ttyACM1 LEADER=/dev/ttyACM0 scripts/arms.sh teleop
 set -euo pipefail
+SELF="$(readlink -f "$0")"
 
 FOLLOWER="${FOLLOWER:-/dev/ttyACM0}"
 LEADER="${LEADER:-/dev/ttyACM1}"
@@ -25,7 +26,9 @@ BENCH=/home/jetson3/projects/so101-bench
 
 cd "$LEROBOT"
 
-case "${1:-help}" in
+cmd="${1:-help}"
+cmd="${cmd##--}"        # accept --teleop as teleop, etc.
+case "$cmd" in
   ports)
     found=$(ls -l /dev/ttyACM* /dev/ttyUSB* 2>/dev/null || true)
     [ -n "$found" ] && echo "$found" || echo "no serial devices"
@@ -69,6 +72,6 @@ case "${1:-help}" in
     exec $PY hardware/staircase_cal.py --port "$FOLLOWER" "$@"
     ;;
   *)
-    sed -n '2,14p' "$0"
+    sed -n '2,14p' "$SELF"
     ;;
 esac
