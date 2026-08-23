@@ -1086,3 +1086,38 @@ from base. Reading: the lag excess recovers essentially all of what a
 perfect contact observation delivers on this task at this budget -- the
 residual is close to a sufficient statistic; D's null sharpens (even the
 true signal helps only as an INPUT). Caveat: 3 seeds, one collection.
+
+## Guard Pareto accounting (2026-08-23): the guarded configuration never succeeds
+
+Desk work, no new runs (roadmap :219-220). scripts/guard_pareto.py pairs the
+guarded/unguarded rows already in results/guard_ab.json (3 checkpoints x 3
+crush tiers x 30 paired episodes) and reports the columns the roadmap asked
+for. Independent recomputation CONFIRMS the paper's headline: 85 -> 3 crushes
+of 180 across the two crush-capable tiers, 96% reduction.
+
+Two accounting issues surfaced, neither a wrong number:
+
+(1) Guarded success is 0/30 in ALL NINE cells. Totals across all three tiers:
+12/270 unguarded -> 0/270 guarded. App C discloses one slice of this (the
+quantized arm's 7/30 at a 131 N median) but not the aggregate; five further
+successes vanish in cells the text does not mention (delta 2 at no-crush, 2 at
+120 N; delta_q16 1 at 120 N). Under the project's own null rule (0/N is a
+defect until proven a boundary) a clean 9-for-9 zero is the pattern that rule
+exists to catch. Mitigating context, which belongs next to it: the unguarded
+policies are themselves weak here (12/270 = 4.4%), and the base arm scores 0
+guarded AND unguarded -- so this is "the guard removes the few successes that
+existed", not "the guard destroys a working policy". Not yet distinguishable
+from a boundary; needs the pairing protocol before it can be called either.
+
+(2) Mixed denominators in one sentence. "85 to 3 of 180" is computed over the
+crush-capable tiers only (6 rows x 30). The peak-force range quoted in the same
+breath, "33--131 N to 13--26 N", is computed over ALL nine cells -- the 131 is
+the delta_q16 no-crush row, a tier where crushing is impossible. Restricted to
+the same 180 episodes the crush claim uses, the range is 33--92 N -> 13--26 N.
+Both ranges are individually correct; the sentence reads as if one denominator.
+Appears in main.tex sec:guard and again in App C. Reviewer bait; costless to fix.
+
+False interventions (guard deletes a success in the no-crush tier, where it had
+nothing to prevent): 9 of the 12 lost successes. Deletion counts are net per
+cell, so they are lower bounds -- the stored rows carry aggregate counts, not
+episode-level pairing.
