@@ -65,7 +65,7 @@ case "$cmd" in
       --dataset.fps=30 \
       --dataset.repo_id="luaia/$NAME" \
       --dataset.root="$BENCH/data/real/$NAME" \
-      --dataset.single_task="pick up the object and place it in the target zone" \
+      --dataset.single_task="${TASK:-pick up the tape roll and place it on the dark target}" \
       --dataset.num_episodes="$N" \
       --dataset.episode_time_s=25 \
       --dataset.reset_time_s=8 \
