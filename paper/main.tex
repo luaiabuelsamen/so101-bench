@@ -11,8 +11,9 @@
 \graphicspath{{../figures/paper/}}
 
 % Draft v0.6, 2026-08-18. Canonical source (docs/paper.md frozen at v0.4).
-% Status: main grid final (5 seeds); guarded column and hardware calibration
-% (App. D) in progress. Full lab record in docs/findings.md.
+% Status: main grid final (5 seeds); guarded column in progress. Hardware
+% baseline comparison landed 2026-09-03 (App. D); the newton scale still
+% needs a load cell. Full lab record in docs/findings.md.
 
 \title{A Retroactive Contact Channel for Behavior Cloning on Low-Cost Arms}
 
@@ -213,8 +214,9 @@ count, linear while the jaw is seated and quasi-static, with held-out
 RMSE 4.3\,N over 4--78\,N. These constants describe the modeled plant:
 the simulator implements the servo loop of Sec.~\ref{sec:formulation}, so
 its $\delta$-to-force map is clean by construction; real STS3215 hardware
-adds stiction, backlash, deadband, saturation, and thermal drift that
-only bench calibration can measure (App.~\ref{app:hardware}). What
+adds stiction, backlash, deadband, saturation, and thermal drift. Bench
+measurement confirms the saturation and characterizes the baseline
+registers (App.~\ref{app:hardware}); the remainder is still unmeasured. What
 simulation can characterize is the structure of the proxy: outside the
 seated quasi-static regime the signal is not a load reading, since free
 motion contributes following lag (which $e[t]$ removes) and fast
@@ -449,9 +451,10 @@ from 85 to 3 of 180 (96\%), with median peak force dropping from
 33--131\,N to 13--26\,N; it also deletes successes one policy earned by
 over-gripping. Demonstrations must record applied
 commands, and wrapped controllers must be closed-loop on contact.
-Details, figure, and integration accounting in App.~\ref{app:guard};
-bench calibration and hardware validation are in progress
-(App.~\ref{app:hardware}).
+Details, figure, and integration accounting in App.~\ref{app:guard}. On
+hardware the register this guard would otherwise read is capped by the
+recording stack itself and saturates through contact, while the channel
+does not (App.~\ref{app:hardware}).
 
 %===============================================================================
 
@@ -619,17 +622,88 @@ untested.
   \label{fig:guard}
 \end{figure}
 
-\section{Hardware calibration protocol (in progress)}
+\section{Hardware: the reviewer's baseline on a physical STS3215}
 \label{app:hardware}
 
-$\delta$ versus \texttt{Present\_Load}, \texttt{Present\_Current}, and a
-load cell on a physical STS3215; staircase protocol at three speeds, with
-opening and closing directions, repeated trials, session-start/middle/end
-drift checks, and a command-to-state latency distribution measurement.
-Comparison rows: the simulator's 2.0\,N/count,
-\citet{hwang2018virtual}, and NeuralActuator~\citep{dou2026neuralactuator}.
-Until this lands, every newton in this paper inherits the simulator's
-contact model; a negative transfer result would itself be the first
-measurement of the channel's sim-to-real gap.
+The first question this paper invites is why estimate contact from
+tracking error when the servo already reports \texttt{Present\_Load} and
+\texttt{Present\_Current} over the same bus. This appendix answers that
+question on hardware and states plainly what it does not answer: the
+newton scale is not yet measured, so every force quantity in the body
+still inherits the simulator's contact model.
+
+\subsection{Static: the baseline is the channel, not an alternative to it}
+
+A payload staircase on a physical SO-101 shoulder-lift joint (STS3215),
+twelve known hanging masses from 63.7 to 319\,g at five arm poses, logging
+\texttt{Present\_Load}, \texttt{Present\_Current}, \texttt{Present\_Position}
+and \texttt{Goal\_Position} together. A known mass is the ground truth; it
+supplies a torque, not a force in the jaw's closing direction.
+
+Poses must be fit separately. Pooling them folds the lever arm into the
+residual and makes all three channels look like noise; per pose the
+structure is unambiguous. \texttt{Present\_Load} is affine in the tracking
+error, $\texttt{load} = -4.70\,\delta + 0.1$ with $R^2 = 0.976$, and it
+tracks the true mass exactly as well as $\delta$ does, pose for pose --
+median $R^2$ 0.473 for both, and equal to three decimals within each pose
+rather than merely similar. That equality is the result: the two are one
+signal, so the register cannot be a better instrument than the channel,
+only a differently scaled one. \texttt{Present\_Current} is the weaker
+instrument here, median $R^2$ 0.041. In the two best-conditioned poses the
+channel resolves 26--35\,g, consistent with the resolution this servo class
+has been reported to support.
+
+\subsection{Dynamic: the baseline loses its range exactly at contact}
+
+Fifty teleoperated demonstrations on the physical arm pair (21{,}476 frames,
+a pick-and-place with a single overhead camera and no wrist view) show what
+the static staircase cannot. \texttt{Present\_Load} pins at 500 in 16.5\% of
+frames, and all fifty episodes reach it. The saturation is not spread evenly:
+it coincides with contact, where $|\delta|$ averages $12.35^\circ$ against
+$2.09^\circ$ elsewhere. Inside those frames the register reports a single
+constant value while $\delta$ still spans $8.01$--$31.01^\circ$, twenty-three
+degrees of range the baseline cannot express. Where the register is not
+clipped the two agree as the static data predicts ($r = -0.853$
+unsaturated, $-0.922$ overall).
+
+\subsection{The ceiling belongs to the stack, not to this arm}
+
+Reading the torque-limit register (address 48) returns 1000 for joints one
+through five and 500 for the gripper alone. \texttt{Present\_Load} is
+full-scale 1000, so 500 is a configured cap on the one joint that makes
+contact. It is not a local misconfiguration: LeRobot~\citep{cadene2024lerobot}
+writes it for every SO-100/SO-101 follower it connects, inside the
+configuration path that connection always invokes, together with a matching
+halving of the current-protection register --- both justified, reasonably, as
+burnout protection.
+
+Both baselines are therefore capped, on the contact joint, by the library the
+fleet records through. $\delta$ requires no register and no limit; it is
+arithmetic over two numbers every one of those logs already stores, and is
+untouched by the same configuration. This is the strongest form of the
+baseline answer available to us, and it is a property of the ecosystem rather
+than of one bench.
+
+\subsection{What is still not measured}
+
+Four gaps, stated because they bound the claims above.
+
+No load cell has been applied, so the newton scale is unmeasured and the
+simulator's 2.0\,N/count remains the provenance of every force figure in
+the body. Hanging masses give torque in the gravity direction on one joint;
+they do not give newtons per count in the jaw's closing direction, which is
+the quantity the task actually depends on. The static staircase is one
+joint, leaving stiffness measured at $n=1$ and its per-servo-versus-per-joint
+prediction untested. It is static only: no three-speed sweep, no opening
+and closing branches for hysteresis, no drift checks, and no
+command-to-state latency distribution --- the last of which
+Sec.~\ref{sec:formulation}'s alignment argument still resolves by corpus
+sweep rather than by measurement. Finally, the current half of the
+saturation result is inferred from the configuration write rather than
+observed, since these recordings log position and load but not current.
+
+Comparison rows for a completed calibration remain the simulator's
+2.0\,N/count, \citet{hwang2018virtual}, and
+NeuralActuator~\citep{dou2026neuralactuator}.
 
 \end{document}
