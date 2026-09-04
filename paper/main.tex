@@ -632,26 +632,69 @@ question on hardware and states plainly what it does not answer: the
 newton scale is not yet measured, so every force quantity in the body
 still inherits the simulator's contact model.
 
-\subsection{Static: the baseline is the channel, not an alternative to it}
+\subsection{Static: the register is the channel, rescaled}
 
-A payload staircase on a physical SO-101 shoulder-lift joint (STS3215),
-twelve known hanging masses from 63.7 to 319\,g at five arm poses, logging
-\texttt{Present\_Load}, \texttt{Present\_Current}, \texttt{Present\_Position}
-and \texttt{Goal\_Position} together. A known mass is the ground truth; it
-supplies a torque, not a force in the jaw's closing direction.
+\textbf{Protocol.} A payload staircase on one STS3215 in an SO-101
+shoulder-lift joint. Twelve hanging masses spanning 63.7--319\,g, each held
+at five arm poses, logging \texttt{Present\_Load} (address 60),
+\texttt{Present\_Current} (69), \texttt{Present\_Position} (56) and
+\texttt{Goal\_Position} (42) at static equilibrium;
+$\delta = \texttt{Goal} - \texttt{Present}$, in encoder counts. Masses are
+known from package labelling rather than weighed, so their systematic error
+is unquantified. Three masses were measured twice
+(106, 149, 191\,g), and those replicates are used below as the
+repeatability estimate; they bound the random component only.
 
-Poses must be fit separately. Pooling them folds the lever arm into the
-residual and makes all three channels look like noise; per pose the
-structure is unambiguous. \texttt{Present\_Load} is affine in the tracking
-error, $\texttt{load} = -4.70\,\delta + 0.1$ with $R^2 = 0.976$, and it
-tracks the true mass exactly as well as $\delta$ does, pose for pose --
-median $R^2$ 0.473 for both, and equal to three decimals within each pose
-rather than merely similar. That equality is the result: the two are one
-signal, so the register cannot be a better instrument than the channel,
-only a differently scaled one. \texttt{Present\_Current} is the weaker
-instrument here, median $R^2$ 0.041. In the two best-conditioned poses the
-channel resolves 26--35\,g, consistent with the resolution this servo class
-has been reported to support.
+\textbf{Poses are fit separately.} Pooling them regresses across five
+different lever arms at once and inflates every residual. All intervals
+below are 95\% bootstrap percentiles over 10{,}000 resamples of the twelve
+masses.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrrrrr}
+\toprule
+pose & $\delta$ slope (counts/g) & $R^2_\delta$ & $R^2_{\mathrm{load}}$ & $R^2_{\mathrm{curr}}$ & replicate $|\Delta_\delta|$ \\
+\midrule
+3 & $-0.0194 \pm 0.0019$ & 0.910 [0.85, 0.98] & 0.910 & 0.014 & 0.33 \\
+1 & $-0.0323 \pm 0.0044$ & 0.845 [0.72, 0.95] & 0.845 & 0.726 & 1.33 \\
+2 & $-0.0435 \pm 0.0145$ & 0.473 [0.10, 0.81] & 0.473 & 0.503 & 7.00 \\
+0 & $-0.0236 \pm 0.0126$ & 0.261 [0.01, 0.71] & 0.279 & 0.041 & 4.00 \\
+4 & $-0.0115 \pm 0.0119$ & 0.085 [0.00, 0.63] & 0.077 & 0.034 & 2.67 \\
+\bottomrule
+\end{tabular}
+\caption{Per-pose fits against true hanging mass, ordered by $R^2_\delta$.
+Replicate $|\Delta_\delta|$ is the mean absolute difference in $\delta$
+between the two independent measurements at each repeated mass, in counts.}
+\label{tab:appd}
+\end{table}
+
+\textbf{The register carries the same information as the channel.}
+Pooled over all sixty measurements,
+$\texttt{Present\_Load} = -4.70\,(\pm 0.10)\,\delta + 0.1$ with
+$R^2 = 0.976$ $[0.969, 0.982]$ (Fig.~\ref{fig:appd}, right). Per pose the
+two track the true mass to within 0.017 of each other in $R^2$, agreeing to
+three decimals in three of five poses. They are one signal on this joint, so
+the register cannot be a better instrument than the channel --- only a
+differently scaled one. This is the claim the appendix is for, and it is
+the one the data supports most strongly.
+
+\textbf{What limits it is repeatability, not lever arm.} The spread in
+Table~\ref{tab:appd} is large, and it does not follow slope magnitude: pose
+2 has the steepest response to mass and still resolves poorly, while pose 3
+has a middling slope and the tightest fit. It follows the replicate column
+instead. Dividing repeatability by slope gives the mass a single
+measurement can distinguish: about 17\,g at pose 3 and 41\,g at pose 1,
+against 160--230\,g at the three poorly repeating poses. The channel's
+usable resolution on this joint is therefore a property of where the arm is
+standing, not a single number, and the favourable figure is the exception
+rather than the summary.
+
+\textbf{Current is not established as the better instrument, or the worse
+one.} $\delta$ attains the higher $R^2$ in four of five poses, which under
+an exact paired sign test is $p = 0.06$ --- suggestive at $n = 5$ poses and
+not significant. We report the ordering and decline to claim it.
 
 \subsection{Dynamic: the baseline loses its range exactly at contact}
 
