@@ -30,7 +30,7 @@
 %===============================================================================
 
 \begin{abstract}
-Low-cost servo arms ship without force sensing, and standard imitation-learning stacks observe joint positions only, so learned policies close the gripper open-loop against contact. For logs that record synchronized joint-position commands and measured positions, the servo tracking error $\delta = a[t{-}1] - s[t]$ is a contact proxy that can be computed retrospectively, and current stacks discard it. In a pre-registered six-design study at 280 demonstrations on a simulated force-critical task (5 seeds $\times$ 100 paired episodes), every observation that carries this channel explicitly outperforms the channel-free base, while predicting $\delta$ as an auxiliary training target does not. The strongest design appends a free-motion-compensated residual, the \emph{lag excess}, reaching 26.6\% success against 6.2\% for the channel-free base ($t = 4.7$). It is also the only design to beat an action-history baseline at our pre-declared seed resolution (13.8\%; 95\% CI on the difference $[+2.8, +22.6]$), but it observes one more frame of action history than that baseline, so that comparison varies content as well as form and its information-matched control is absent from this grid. On 546 episodes across 16 public teleoperation datasets, the pre-registered prediction that successful grasps carry higher $\delta$ fails: under the frozen outcome proxy, high $\delta$ at grasp time is associated with failure, consistent with operators forcing jammed grasps. Code and data at [URL].
+Low-cost servo arms ship without force sensing, and standard imitation-learning stacks observe joint positions only, so learned policies close the gripper open-loop against contact. For logs that record synchronized joint-position commands and measured positions, the servo tracking error $\delta = a[t{-}1] - s[t]$ is a contact proxy that can be computed retrospectively, and current stacks discard it. In a pre-registered six-design study at 280 demonstrations on a simulated force-critical task (5 seeds $\times$ 100 paired episodes), every observation that carries this channel explicitly outperforms the channel-free base, while predicting $\delta$ as an auxiliary training target does not. The strongest design appends a free-motion-compensated residual, the \emph{lag excess}, reaching 26.6\% success against 6.2\% for the channel-free base ($t = 4.7$). It is also the only design to beat an action-history baseline at our pre-declared seed resolution (13.8\%; 95\% CI on the difference $[+2.8, +22.6]$), but it observes one more frame of action history than that baseline. A matched control given the same two frames without the subtraction recovers almost none of the difference ($+0.9$ points, unresolved at three seeds), placing the effect in the form of the observation rather than in the extra frame. On 546 episodes across 16 public teleoperation datasets, the pre-registered prediction that successful grasps carry higher $\delta$ fails: under the frozen outcome proxy, high $\delta$ at grasp time is associated with failure, consistent with operators forcing jammed grasps. Code and data at [URL].
 \end{abstract}
 
 \keywords{Imitation Learning, Force Estimation, Low-Cost Manipulation}
@@ -584,8 +584,19 @@ only, and $\hat{K}$ is far from zero (0.74--0.84 across joints, 0.80 on the
 jaw). $E$ therefore consumes one more frame of action history than the
 baseline it is compared against, and $E{-}B$ confounds the free-motion
 subtraction with that additional frame. The comparison that isolates the
-subtraction holds the raw inputs fixed --- $E$ against a two-step raw history
-$[s[t], a[t{-}1], a[t{-}2]]$ --- and that arm is not in the present grid.
+subtraction holds the raw inputs fixed: $E$ against a two-step raw history
+$B2 = [s[t], a[t{-}1], a[t{-}2]]$, information-matched to $E$ by construction.
+We ran it at three seeds under a rule frozen beforehand. $B2$ reaches
+$14.7 \pm 3.2$, gaining $+0.9$ over the one-frame baseline (unresolved,
+CI $[-7.7, +9.1]$), while $E$ exceeds $B2$ by $+11.9$ ($t = 3.03$, CI
+$[+3.3, +20.7]$). The additional action frame therefore accounts for about
+one point of $E$'s $+12.8$, and the remainder survives against an
+information-matched control --- evidence that the effect is the free-motion
+subtraction rather than the extra frame. It does not clear the 15-point
+resolution bar we declared in advance, so we report it as bounding the
+confound rather than as establishing the subtraction, and note that $B2$ is
+18-dimensional against $E$'s 12, so the comparison is matched in information
+and not in width.
 $C{-}B$ is by contrast a clean representation test, since $C$ and $B$ observe
 the same raw quantities --- and it does not resolve at our seed budget
 ($+8.0$, $t = 1.44$). The decomposition is exact:
