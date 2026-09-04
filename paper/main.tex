@@ -889,14 +889,21 @@ it inferred: a single follower reading 500 on its gripper is equally
 consistent with that unit having been flashed that way. The load-bearing
 evidence is therefore the code path, which writes the value unconditionally
 on every connection, not the measurement, which confirms the value is present
-on the one unit we have. The discriminating test is cheap and we name it so a
-reader can run it: the leader configuration path performs no torque-limit
-write at all, so a leader gripper reading full scale against a follower
-gripper reading 500, on arms of the same model and flash, would establish
-that the stack writes the cap rather than the hardware shipping with it.
-Until that is done the claim is that the library sets this ceiling on every
-follower it connects, which the source establishes, rather than that we have
-observed it across a fleet.
+on the one unit we have. We ran the discriminating test and it did not
+discriminate. The leader configuration path performs no torque-limit write, so
+a leader gripper at full scale beside a follower gripper at 500 would have
+shown the stack writing the cap; instead both grippers on our pair read 500,
+with joints one through five reading 1000 on each. Two explanations survive
+and our hardware cannot separate them: the units may ship with the gripper
+capped, or the leader may at some point have been connected through a follower
+class --- a port swap this bench's own tooling explicitly anticipates --- which
+would have written the value and erased the evidence permanently.
+
+The claim therefore rests on the source rather than on our measurement.
+LeRobot writes 500 on every follower it connects, which any reader can check
+in the configuration path, and our registers are consistent with that without
+confirming it. A clean test needs a follower that has never been connected
+through the library, and we did not have one.
 
 \subsection{What is still not measured}
 
