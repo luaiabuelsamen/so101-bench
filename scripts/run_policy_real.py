@@ -77,6 +77,13 @@ def main():
     ap.add_argument("--max-relative-target", type=float, default=8.0,
                     help="degrees per step per joint; 99.9th pct of the demos")
     ap.add_argument("--image-size", type=int, default=96)
+    ap.add_argument("--out-traj", default=None, help="npz to save the rollout")
+    ap.add_argument("--jumpstart", type=int, default=0,
+                    help="replay this many demo actions open-loop before handing over")
+    ap.add_argument("--jumpstart-episode", type=int, default=0)
+    ap.add_argument("--jumpstart-root", default="data/real/pickplace_real_v0")
+    ap.add_argument("--home", default=None, metavar="DATASET_ROOT",
+                    help="move to the mean demo start pose before rolling out")
     ap.add_argument("--dry-run", action="store_true",
                     help="run the full loop but never send an action to the arm")
     args = ap.parse_args()
@@ -106,9 +113,72 @@ def main():
           f"cap {args.max_steps} steps ({args.max_steps/FPS:.0f}s)"
           + ("  [DRY RUN: no actions sent]" if args.dry_run else ""))
 
+    # The policy's action vector is ordered as the dataset's action feature was.
+    # Assert rather than assume: a silent permutation here commands the wrong
+    # joints, which the per-step clamp would not catch.
+    motor_names = list(robot.bus.motors)[:6]
+    expected = ["shoulder_pan", "shoulder_lift", "elbow_flex",
+                "wrist_flex", "wrist_roll", "gripper"]
+    if motor_names != expected:
+        raise SystemExit(f"motor order {motor_names} != training order {expected}")
+    print(f"joint order verified: {motor_names}")
+
+    period = 1.0 / FPS
     a_prev = a_prev2 = None
     hist = []
-    period = 1.0 / FPS
+    if args.home:
+        # Demonstrations all begin from nearly the same pose -- shoulder_lift has
+        # sd 0.5 deg across 50 episodes. Starting the policy anywhere else is
+        # immediately out of distribution on the joint that does the reaching,
+        # and the policy holds still. Walk to the mean start pose first, under
+        # the same per-step clamp.
+        import pyarrow as pa, pyarrow.parquet as pq, glob as _g
+        tb = pa.concat_tables([pq.read_table(f) for f in sorted(
+            _g.glob(str(Path(args.home) / "data" / "**" / "*.parquet"), recursive=True))])
+        st = np.array(tb["observation.state"].to_pylist(), float)[:, :6]
+        epi = np.array(tb["episode_index"].to_pylist())
+        home = np.array([st[epi == e][0] for e in sorted(set(epi))]).mean(0)
+        print("homing to demo mean start: " + " ".join(f"{v:.1f}" for v in home))
+        for _ in range(400):
+            obs = robot.get_observation()
+            cur = np.array([obs[f"{m}.pos"] for m in motor_names], np.float32)
+            if np.abs(home - cur).max() < 1.0:
+                break
+            robot.send_action({f"{m}.pos": float(home[i])
+                               for i, m in enumerate(motor_names)})
+            time.sleep(period)
+        obs = robot.get_observation()
+        cur = np.array([obs[f"{m}.pos"] for m in motor_names], np.float32)
+        print("  at rest: " + " ".join(f"{v:.1f}" for v in cur)
+              + f"   max error {np.abs(home-cur).max():.1f} deg")
+
+    if args.jumpstart:
+        # 49/50 episodes open with a ~1.9 s stationary pause, so a policy trained
+        # on them treats the start pose as an absorbing state. Replay a demo's
+        # opening actions open-loop to carry the arm past it, then hand over.
+        import pyarrow as pa, pyarrow.parquet as pq, glob as _g
+        tb = pa.concat_tables([pq.read_table(f) for f in sorted(
+            _g.glob(str(Path(args.home or args.jumpstart_root) / "data" / "**" / "*.parquet"),
+                    recursive=True))])
+        AA = np.array(tb["action"].to_pylist(), np.float32)
+        ee = np.array(tb["episode_index"].to_pylist())
+        demo = AA[ee == args.jumpstart_episode][: args.jumpstart]
+        print(f"jumpstart: replaying {len(demo)} demo actions from episode "
+              f"{args.jumpstart_episode} open-loop")
+        for k, act in enumerate(demo):
+            robot.send_action({f"{m}.pos": float(act[i])
+                               for i, m in enumerate(motor_names)})
+            a_prev2, a_prev = a_prev, act.astype(np.float32)
+            obs = robot.get_observation()
+            hist.append(np.array([obs[f"{m}.pos"] for m in motor_names], np.float32))
+            time.sleep(period)
+        cur = hist[-1]
+        print("  handing over at: " + " ".join(f"{v:6.1f}" for v in cur))
+
+    if not args.jumpstart:
+        a_prev = a_prev2 = None
+        hist = []
+    traj = []
     try:
         for step in range(args.max_steps):
             t0 = time.perf_counter()
@@ -131,20 +201,31 @@ def main():
             action = a_norm * stats["a_std"] + stats["a_mean"]
 
             if not args.dry_run:
-                robot.send_action({m: float(action[i])
-                                   for i, m in enumerate(list(robot.bus.motors)[:6])})
+                # send_action keeps only keys ending in .pos; without the suffix
+                # the write set is empty and sync_write raises StopIteration.
+                robot.send_action({f"{m}.pos": float(action[i])
+                                   for i, m in enumerate(motor_names)})
             a_prev2, a_prev = a_prev, action.astype(np.float32)
 
-            if step % 30 == 0:
-                print(f"  step {step:4d}  jaw cmd {action[GRIPPER]:6.1f}  "
-                      f"jaw pos {pos[GRIPPER]:6.1f}  "
-                      f"delta {action[GRIPPER]-pos[GRIPPER]:+6.1f}", flush=True)
+            traj.append((pos.copy(), action.astype(np.float32).copy()))
+            if step % 60 == 0:
+                print(f"  {step:4d} pos " + " ".join(f"{v:6.1f}" for v in pos)
+                      + "  cmd " + " ".join(f"{v:6.1f}" for v in action), flush=True)
             time.sleep(max(0.0, period - (time.perf_counter() - t0)))
     except KeyboardInterrupt:
         print("\ninterrupted")
     finally:
         robot.disconnect()      # disable_torque_on_disconnect releases the arm
         print("disconnected, torque released -- the arm is limp and will drop.")
+        if traj:
+            P = np.array([t[0] for t in traj]); A = np.array([t[1] for t in traj])
+            out = Path(args.out_traj) if args.out_traj else None
+            rng = P.max(0) - P.min(0)
+            print("\nper-joint travel over the episode (deg):")
+            print("  " + " ".join(f"{v:6.1f}" for v in rng))
+            print(f"  total path length: {np.abs(np.diff(P, axis=0)).sum():.1f} deg")
+            if out:
+                np.savez(out, pos=P, action=A); print(f"  saved {out}")
 
 
 if __name__ == "__main__":

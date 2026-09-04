@@ -88,7 +88,8 @@ def decode_video_cache(root: Path, image_size: int, n_frames: int) -> np.ndarray
 
 
 class RealChunkDataset(torch.utils.data.Dataset):
-    def __init__(self, root: Path, arm: str, image_size: int = 96, ghist_k: int = 8):
+    def __init__(self, root: Path, arm: str, image_size: int = 96, ghist_k: int = 8,
+                 trim_static: bool = True):
         import pyarrow as pa
         import pyarrow.parquet as pq
 
@@ -148,12 +149,33 @@ class RealChunkDataset(torch.utils.data.Dataset):
                 self.k_hat[j] = float((r * d_).sum() / den) if den > 1e-6 else 0.0
             print(f"  k_hat = {np.round(self.k_hat, 3).tolist()}")
 
+        # 49 of 50 recorded episodes open with a stationary pause (median 1.9 s):
+        # the operator settles before starting. A policy trained on those frames
+        # correctly learns "at the start pose, hold still", and in closed loop
+        # that is an absorbing state -- the observation never changes, so it
+        # never leaves the pause. Teacher forcing hides this because recorded
+        # observations advance regardless. Drop the dead prefix, keeping a short
+        # lead-in so the transition into motion is still represented.
+        self.index = np.arange(len(self.S))
+        if trim_static:
+            keep = []
+            for e in sorted(set(ep.tolist())):
+                idx = np.flatnonzero(ep == e)
+                mot = np.abs(np.diff(self.A[idx], axis=0)).sum(1)
+                moving = np.flatnonzero(mot > 1.0)
+                first = max(0, int(moving[0]) - 5) if len(moving) else 0
+                keep.append(idx[first:])
+            self.index = np.concatenate(keep)
+            print(f"  trim_static: {len(self.S)} -> {len(self.index)} frames "
+                  f"({100*(1-len(self.index)/len(self.S)):.0f}% of frames were dead prefix)")
+
         self.frames = decode_video_cache(root, image_size, len(self.S))
 
     def __len__(self):
-        return len(self.S)
+        return len(self.index)
 
     def __getitem__(self, i):
+        i = int(self.index[i])
         end = self.ep_end[i]
         n = min(CHUNK, end - i)
         chunk = np.empty((CHUNK, 6), np.float32)
@@ -230,13 +252,16 @@ def main():
     ap.add_argument("--image-size", type=int, default=96)
     ap.add_argument("--ghist-k", type=int, default=8)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--keep-static", action="store_true",
+                    help="keep the stationary prefix of each episode (default: drop it)")
     args = ap.parse_args()
 
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
 
     print(f"arm={args.arm} steps={args.steps} device={DEVICE}")
-    ds = RealChunkDataset(Path(args.root).resolve(), args.arm, args.image_size, args.ghist_k)
+    ds = RealChunkDataset(Path(args.root).resolve(), args.arm, args.image_size,
+                          args.ghist_k, trim_static=not args.keep_static)
     state_dim = 6 if args.arm == "base" else 12
     print(f"  {len(ds)} frames, state_dim={state_dim}")
 
