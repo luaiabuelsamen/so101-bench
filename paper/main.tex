@@ -30,7 +30,7 @@
 %===============================================================================
 
 \begin{abstract}
-Low-cost servo arms ship without force sensing, and standard imitation-learning stacks observe joint positions only, so learned policies close the gripper open-loop against contact. For logs that record synchronized joint-position commands and measured positions, the servo tracking error $\delta = a[t{-}1] - s[t]$ is a contact proxy that can be computed retrospectively, and current stacks discard it. In a pre-registered six-design study at 280 demonstrations on a simulated force-critical task (5 seeds $\times$ 100 paired episodes), every observation that carries this channel explicitly outperforms the channel-free base, while predicting $\delta$ as an auxiliary training target does not. The strongest design appends a free-motion-compensated residual, the \emph{lag excess}, reaching 26.6\% success against 6.2\% for the channel-free base ($t = 4.7$). It is also the only design to beat an action-history baseline at our pre-declared seed resolution, which scales as $15\sqrt{3/n}$ and is 11.6 points at five seeds (13.8\%; 95\% CI on the difference $[+2.8, +22.6]$), but it observes one more frame of action history than that baseline. Against an information-matched control given the same two frames without the subtraction, the advantage persists at $+11.9$ points (three seeds; the interval excludes zero but falls below the 15-point bar that same rule sets at three). On 546 episodes across 16 public teleoperation datasets, the pre-registered prediction that successful grasps carry higher $\delta$ fails: under the frozen outcome proxy, high $\delta$ at grasp time is associated with failure, consistent with operators forcing jammed grasps. Code and data at [URL].
+Low-cost servo arms ship without force sensing, and standard imitation-learning stacks observe joint positions only, so learned policies close the gripper open-loop against contact. For logs that record synchronized joint-position commands and measured positions, the servo tracking error $\delta = a[t{-}1] - s[t]$ is a contact proxy that can be computed retrospectively, and current stacks discard it. In a pre-registered six-design study at 280 demonstrations on a simulated force-critical task (5 seeds $\times$ 100 paired episodes), every observation that carries this channel explicitly outperforms the channel-free base, while predicting $\delta$ as an auxiliary training target does not. The strongest design appends a free-motion-compensated residual, the \emph{lag excess}, reaching 26.6\% success against 6.2\% for the channel-free base ($+20.4$ points, $t = 4.7$) --- roughly twice our pre-declared resolution, which scales as $15\sqrt{3/n}$ and is 11.6 points at five seeds. Isolating the \emph{form} of the observation from its content requires a control that sees the same inputs without the subtraction, since the lag excess consumes one more frame of action history than a raw one-step baseline; against that control the advantage is $+11.9$ points (three seeds, 95\% CI $[+3.3, +20.7]$, below the 15-point bar the same rule sets at three seeds). On 546 episodes across 16 public teleoperation datasets, the pre-registered prediction that successful grasps carry higher $\delta$ fails: under the frozen outcome proxy, high $\delta$ at grasp time is associated with failure, consistent with operators forcing jammed grasps. Code and data at [URL].
 \end{abstract}
 
 \keywords{Imitation Learning, Force Estimation, Low-Cost Manipulation}
@@ -403,9 +403,16 @@ Second, the tested auxiliary-prediction design does not recover the
 direct-input gain: arm D lands equal to base while the same information
 as an input triples success; other auxiliary weightings and architectures
 could in principle close this gap, and none was tuned here. Third, in the
-declared headline comparison, only the lag-excess form beats action
-history at resolution, by 12.8 points (Welch's $t = 2.6$ across seed
-means); raw $\delta$'s 8-point margin over history does not resolve. The
+comparison declared as headline before the confound below was known, only
+the lag-excess form beats action history at resolution, by 12.8 points
+(Welch's $t = 2.6$ across seed means, against a bar of 11.6 at five
+seeds); raw $\delta$'s 8-point margin over history does not resolve. That
+pair is confounded: $E$ consumes $a[t{-}2]$ through the commanded rate and
+the baseline does not, so it varies content as well as form, and it is
+superseded by the information-matched control $B2 = [s[t], a[t{-}1],
+a[t{-}2]]$, which $E$ exceeds by $+11.9$ (three seeds, CI $[+3.3,
++20.7]$, below the three-seed bar of 15). We report $E{-}B$ because it was
+declared, and rest the form claim on $E{-}B2$. The
 remaining pairs stay open, including E against C (difference $+4.8$, CI
 $[-6.2, +15.8]$), so whether E's edge comes from the subtraction or from
 $\delta$ at all is not attributable at this budget;
