@@ -7,6 +7,7 @@
 #   scripts/arms.sh teleop             # leader-follower teleoperation loop
 #   scripts/arms.sh teleop-cam         # teleop + front camera preview
 #   scripts/arms.sh record NAME N      # record N teleop episodes -> data/real/NAME
+#   RESUME=1 scripts/arms.sh record NAME N   # append N more to an existing set
 #   scripts/arms.sh staircase          # bench calibration (delta/load/current vs load cell)
 #
 # Convention (from the original working setup): FOLLOWER=/dev/ttyACM0,
@@ -69,7 +70,8 @@ case "$cmd" in
       --dataset.num_episodes="$N" \
       --dataset.episode_time_s=25 \
       --dataset.reset_time_s=8 \
-      --dataset.push_to_hub=false
+      --dataset.push_to_hub=false \
+      ${RESUME:+--resume=true}
     ;;
   staircase)
     shift
