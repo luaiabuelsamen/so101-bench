@@ -826,9 +826,21 @@ burnout protection.
 Both baselines are therefore capped, on the contact joint, by the library the
 fleet records through. $\delta$ requires no register and no limit; it is
 arithmetic over two numbers every one of those logs already stores, and is
-untouched by the same configuration. This is the strongest form of the
-baseline answer available to us, and it is a property of the ecosystem rather
-than of one bench.
+untouched by the same configuration.
+
+The register read is from one arm, and we state the limit rather than leave
+it inferred: a single follower reading 500 on its gripper is equally
+consistent with that unit having been flashed that way. The load-bearing
+evidence is therefore the code path, which writes the value unconditionally
+on every connection, not the measurement, which confirms the value is present
+on the one unit we have. The discriminating test is cheap and we name it so a
+reader can run it: the leader configuration path performs no torque-limit
+write at all, so a leader gripper reading full scale against a follower
+gripper reading 500, on arms of the same model and flash, would establish
+that the stack writes the cap rather than the hardware shipping with it.
+Until that is done the claim is that the library sets this ceiling on every
+follower it connects, which the source establishes, rather than that we have
+observed it across a fleet.
 
 \subsection{What is still not measured}
 
