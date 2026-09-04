@@ -30,7 +30,7 @@
 %===============================================================================
 
 \begin{abstract}
-Low-cost servo arms ship without force sensing, and standard imitation-learning stacks observe joint positions only, so learned policies close the gripper open-loop against contact. For logs that record synchronized joint-position commands and measured positions, the servo tracking error $\delta = a[t{-}1] - s[t]$ is a contact proxy that can be computed retrospectively, and current stacks discard it. In a pre-registered six-design study at 280 demonstrations on a simulated force-critical task (5 seeds $\times$ 100 paired episodes), every observation that carries this channel explicitly outperforms the channel-free base, while predicting $\delta$ as an auxiliary training target does not. The strongest design appends a free-motion-compensated residual, the \emph{lag excess}, and is the only one to outperform an action-history baseline at our pre-declared seed resolution (26.6\% success versus 13.8\%; 95\% CI on the difference $[+2.8, +22.6]$). On 546 episodes across 16 public teleoperation datasets, the pre-registered prediction that successful grasps carry higher $\delta$ fails: under the frozen outcome proxy, high $\delta$ at grasp time is associated with failure, consistent with operators forcing jammed grasps. Code and data at [URL].
+Low-cost servo arms ship without force sensing, and standard imitation-learning stacks observe joint positions only, so learned policies close the gripper open-loop against contact. For logs that record synchronized joint-position commands and measured positions, the servo tracking error $\delta = a[t{-}1] - s[t]$ is a contact proxy that can be computed retrospectively, and current stacks discard it. In a pre-registered six-design study at 280 demonstrations on a simulated force-critical task (5 seeds $\times$ 100 paired episodes), every observation that carries this channel explicitly outperforms the channel-free base, while predicting $\delta$ as an auxiliary training target does not. The strongest design appends a free-motion-compensated residual, the \emph{lag excess}, reaching 26.6\% success against 6.2\% for the channel-free base ($t = 4.7$). It is also the only design to beat an action-history baseline at our pre-declared seed resolution (13.8\%; 95\% CI on the difference $[+2.8, +22.6]$), but it observes one more frame of action history than that baseline, so that comparison varies content as well as form and its information-matched control is absent from this grid. On 546 episodes across 16 public teleoperation datasets, the pre-registered prediction that successful grasps carry higher $\delta$ fails: under the frozen outcome proxy, high $\delta$ at grasp time is associated with failure, consistent with operators forcing jammed grasps. Code and data at [URL].
 \end{abstract}
 
 \keywords{Imitation Learning, Force Estimation, Low-Cost Manipulation}
@@ -491,7 +491,42 @@ independently of either is that policies with no action-history input in
 any form plateau at 16--24\% lift commitment across three data recipes
 while channel-bearing policies reach 47--76\%: the information appears
 necessary, and it is the \emph{form} whose value at scale is unresolved.
-Running $E$ at the larger budget is the experiment we would prioritize.
+This pattern is not peculiar to our setup:
+\citet{zeng2026revisiting} sweep context length against dataset size and find
+the ordering between short- and long-context policies reverses between 200 and
+1000 demonstrations, with dataset size disproportionately favouring the
+longer-context policy. Our 280-to-600 window sits inside that crossover, so the
+tie we observe is the expected behaviour of a known effect rather than an
+unexplained inconsistency --- which also means a single budget cannot identify
+the mechanism, and any arm we compare must be compared at more than one.
+
+A second caveat bears on the primary comparison specifically. The lag excess
+$e[t] = \delta[t] - \hat{K} r[t]$ depends on $a[t{-}2]$ through the commanded
+rate, while the action-history baseline $B$ observes $s[t]$ and $a[t{-}1]$
+only, and $\hat{K}$ is far from zero (0.74--0.84 across joints, 0.80 on the
+jaw). $E$ therefore consumes one more frame of action history than the
+baseline it is compared against, and $E{-}B$ confounds the free-motion
+subtraction with that additional frame. The comparison that isolates the
+subtraction holds the raw inputs fixed --- $E$ against a two-step raw history
+$[s[t], a[t{-}1], a[t{-}2]]$ --- and that arm is not in the present grid.
+$C{-}B$ is by contrast a clean representation test, since $C$ and $B$ observe
+the same raw quantities --- and it does not resolve at our seed budget
+($+8.0$, $t = 1.44$). The decomposition is exact:
+$E{-}B = (E{-}C) + (C{-}B) = +4.8\ (t{=}0.86) + 8.0\ (t{=}1.44) = +12.8$, so
+the one pair clearing our resolution bar is significant only as the sum of two
+components neither of which is separately claimable at $n=5$ seeds. A wider
+audit of the arms' information dependence sharpens this: of the design
+comparisons the grid draws conclusions from, only $C{-}B$ and $D{-}A$ hold raw
+content fixed while varying form. $F$ in particular consumes an entire episode
+prefix, because its seat detector latches once and never resets, yet does not
+beat $E$ --- so a simple information ordering does not explain the grid either.
+$D{-}A$ is matched by construction, the channel entering only as an auxiliary
+target, which makes the observe-versus-predict null the grid's most securely
+grounded design result. Nothing here bears on the channel-versus-channel-free
+result ($E{-}A = +20.4$, $t = 4.7$); what is unresolved is the narrower claim
+that the lag excess specifically improves on action history. Running $E$ and
+the matched two-step baseline at both budgets is the experiment we would
+prioritize.
 On real logs, $\delta$ depends on action semantics and timing that the
 corpus study characterizes only up to an integer-offset sweep. The corpus
 success proxy is unvalidated against ground truth, and multi-grasp tasks
