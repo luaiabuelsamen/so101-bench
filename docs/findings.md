@@ -1155,3 +1155,50 @@ one-line register read and it decides how strongly the paragraph can be written.
 
 Not claimed: nothing here is a policy result. These are demonstrations, not
 evaluations, and no arm has been trained on them.
+
+## The 500 ceiling is lerobot's, fleet-wide (2026-09-03)
+
+Follow-up to the saturation entry above, and it upgrades that finding from a
+property of our arm to a property of the stack.
+
+Read of addr 48 (Torque_Limit) on the follower, read-only, arm idle:
+
+    joints 1-5 (pan, lift, elbow, wrist_flex, wrist_roll) : 1000
+    joint 6    (gripper)                                  :  500
+
+Present_Load is full-scale 1000, so 500 is a configured cap, not the register's
+ceiling -- and it is set on the gripper alone. lerobot writes it, unconditionally,
+for every SO-100/SO-101 follower it connects
+(robots/so_follower/so_follower.py:172-175, in configure(), called from
+connect():110):
+
+    Max_Torque_Limit   = 500   # 50% of max torque to avoid burnout
+    Protection_Current = 250   # 50% of max current to avoid burnout
+    Overload_Torque    = 25
+
+Three consequences, in increasing order of how much they help the paper:
+
+1. Our 16.5%-of-frames saturation is not a local misconfiguration to apologise
+   for. It is what every SO-100/101 gripper does under this stack.
+2. The SAME block halves Protection_Current, so the second reviewer baseline is
+   capped by the same three lines. The two obvious alternatives to delta are
+   both clipped, on the one joint where manipulation makes contact, by the
+   library everyone records through.
+3. delta requires no register and no limit. It is untouched by all three writes
+   because it is arithmetic on numbers already in the log.
+
+This is the strongest form of the reviewer's-baseline answer so far, and it is
+ecosystem-wide rather than n=1: not "load happens to be worse on our bench" but
+"the fleet's own default caps load and current through contact, and the channel
+that survives is the one nobody is recording."
+
+Honest limits. The current half is INFERRED from the configuration write, not
+measured: our dataset logs position and load, not current. The corpus study's
+datasets record neither, so this cannot be checked against them -- it is a claim
+about the recording stack, not about corpus contents. And burnout protection is
+a good reason for the cap; the point is not that lerobot is wrong, it is that a
+sensible safety default silently costs the baseline its range.
+
+Worth one confirmation before it ships: read addr 48 on a second SO-101 that has
+been through lerobot connect, to show the value is written rather than inherited
+from how this particular arm was flashed.

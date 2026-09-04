@@ -11,13 +11,27 @@ argument, and it is the stronger half of the reviewer's-baseline answer.
 
     python scripts/real_channel_saturation.py --root data/real/pickplace_real_v0
 
-CAVEAT, and it decides how strongly this can be stated: 500 is very likely the
-servo's CONFIGURED torque limit (addr 48), not the register's full scale --
-Feetech document Present_Load full scale as 1000 = 100% duty. So the honest
-claim is "under this arm's torque limit, load saturates through contact while
-delta does not", which is a deployment fact rather than a claim about the
-register's ceiling. Read addr 48 on the follower to settle it before this goes
-in the paper.
+SETTLED 2026-09-03 (was a caveat here). 500 is the CONFIGURED torque limit, not
+the register's ceiling: Present_Load is full-scale 1000, and a read of addr 48
+on this follower returns 1000 for joints 1-5 and 500 for the gripper alone.
+
+That asymmetry is not local. lerobot sets it, unconditionally, for every
+SO-100/SO-101 follower it connects -- robots/so_follower/so_follower.py:172-175,
+inside configure(), which connect() always calls:
+
+    if motor == "gripper":
+        Max_Torque_Limit  = 500   # 50% of max torque to avoid burnout
+        Protection_Current = 250  # 50% of max current to avoid burnout
+        Overload_Torque    = 25
+
+So the ceiling that clips Present_Load through contact is a property of the
+stack the whole fleet runs, applied to the one joint where manipulation makes
+contact. The same block halves Present_Current, the other reviewer baseline.
+delta needs no register and no limit, and is untouched by all three writes.
+
+The claim is therefore ecosystem-wide rather than n=1, with one honest limit:
+this dataset logs position and load but NOT current, so current's saturation is
+inferred from the configuration write, not measured here.
 """
 
 import argparse
