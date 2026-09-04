@@ -331,6 +331,20 @@ from a hierarchical bootstrap resampling seeds, then episodes.
   \end{tabular}
 \end{table}
 
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.95\linewidth]{fig_decomposition.png}
+  \caption{What each comparison in the grid holds fixed. Blue circles vary
+  the \emph{form} of the observation at matched raw content; red diamonds are
+  presented as form comparisons but also differ in content, since the lag
+  excess consumes $a[t{-}2]$ through the commanded rate and the history
+  baseline does not; the grey square is a content comparison, which is the
+  point of that pair. The shaded band is the below-resolution zone at
+  $\sigma_{\text{seed}} \approx 10$. Intervals are the hierarchical bootstrap
+  of Table~\ref{tab:grid}, resampling seeds and then episodes within seeds.}
+  \label{fig:decomposition}
+\end{figure}
+
 Three results resolve. First, channel-bearing observation beats
 channel-free in every input form: C, E, and F each clear the base by at
 least 15 points with intervals excluding zero (Table~\ref{tab:grid}).
@@ -759,9 +773,10 @@ standing, not a single number, and the favourable figure is the exception
 rather than the summary.
 
 \textbf{Current is not established as the better instrument, or the worse
-one.} $\delta$ attains the higher $R^2$ in four of five poses, which under
-an exact paired sign test is $p = 0.06$ --- suggestive at $n = 5$ poses and
-not significant. We report the ordering and decline to claim it.
+one.} $\delta$ attains the higher $R^2$ in four of five poses, which under an
+exact paired sign test is $p = 0.375$ --- at $n = 5$ poses that is
+uninformative in either direction, four coin flips landing the same way. We
+report the ordering and claim nothing from it.
 
 \subsection{Dynamic: the baseline loses its range exactly at contact}
 
