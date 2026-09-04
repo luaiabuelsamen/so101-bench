@@ -88,6 +88,8 @@ def main():
                     help="run the full loop but never send an action to the arm")
     args = ap.parse_args()
 
+    import logging
+    logging.getLogger().setLevel(logging.ERROR)   # clamp warnings drown the trace
     import cv2
     from lerobot.cameras.opencv import OpenCVCameraConfig
     from lerobot.policies.act.modeling_act import ACTPolicy
@@ -179,9 +181,12 @@ def main():
         a_prev = a_prev2 = None
         hist = []
     traj = []
+    t_start = None
     try:
         for step in range(args.max_steps):
             t0 = time.perf_counter()
+            if t_start is None:
+                t_start = t0
             obs = robot.get_observation()
             pos = np.array([obs[f"{m}.pos"] for m in robot.bus.motors], np.float32)[:6]
             hist.append(pos)
@@ -219,6 +224,10 @@ def main():
         print("disconnected, torque released -- the arm is limp and will drop.")
         if traj:
             P = np.array([t[0] for t in traj]); A = np.array([t[1] for t in traj])
+            if len(traj) > 1 and t_start is not None:
+                hz = len(traj) / (time.perf_counter() - t_start)
+                print(f"achieved control rate: {hz:.1f} Hz (target {FPS})"
+                      + ("   <-- SLOW, chunks are stretched" if hz < FPS * 0.8 else ""))
             out = Path(args.out_traj) if args.out_traj else None
             rng = P.max(0) - P.min(0)
             print("\nper-joint travel over the episode (deg):")
