@@ -21,11 +21,14 @@ sessions rather than overwriting.
 import argparse
 import json
 import subprocess
-import sys
 from datetime import datetime
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
+# Always the venv interpreter, never sys.executable: this script is convenient
+# to launch with the system python, which has NumPy 2.x and cannot import the
+# cv2/torch build the rest of the pipeline uses.
+PY = "/home/jetson3/projects/clean_env/venv/bin/python"
 CKPT = {"base": "checkpoints/real50_base_s0",
         "excess": "checkpoints/real50_excess_s0",
         "ghist": "checkpoints/real50_ghist_s0",
@@ -71,7 +74,7 @@ def main():
         input(f"--- trial {t+1}/{args.trials}  arm={arm}  "
               f"[reset the scene, then press Enter]")
         tag = f"{session.replace(':','')}_{t:02d}_{arm}"
-        cmd = [sys.executable, str(REPO / "scripts" / "run_policy_real.py"),
+        cmd = [PY, str(REPO / "scripts" / "run_policy_real.py"),
                "--checkpoint", CKPT[arm], "--arm", arm,
                "--home", args.root, "--jumpstart", str(args.jumpstart),
                "--max-steps", str(args.max_steps),
