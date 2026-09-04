@@ -518,7 +518,15 @@ unguarded become 0 of 270, and no guarded cell scores above zero. The
 policies are weak to begin with here (4.4\% unguarded, and the
 channel-free arm scores zero either way), so this is the guard deleting
 the few successes that existed rather than dismantling a working policy
---- but a wrapper that never succeeds is not yet a deployable one. Demonstrations must record applied
+--- but a wrapper that never succeeds is not yet a deployable one. The
+shape of the trade is not peculiar to us: \citet{nakamura2025latentcbf}
+report a least-restrictive latent safety filter on hardware that drives
+failures from 62\% to zero while stalls rise from zero to 62\% and task
+success is unchanged at 38\%, converting every failure into a stall and
+adding nothing. Ours is the more severe instance of that mode, since it
+removes the successes as well, and the comparison names what a deployable
+version needs rather than excusing what ours does: intervention selective
+enough to leave the succeeding trajectories intact. Demonstrations must record applied
 commands, and wrapped controllers must be closed-loop on contact.
 Details, figure, and integration accounting in App.~\ref{app:guard}. On
 hardware the register this guard would otherwise read is capped by the
