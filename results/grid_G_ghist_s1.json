@@ -1,0 +1,13 @@
+{
+  "arm": "ghist",
+  "steps": 12000,
+  "results": [
+    {
+      "crush": -1.0,
+      "success": 22,
+      "crushed": 0,
+      "dropped": 26,
+      "episodes": 100
+    }
+  ]
+}
