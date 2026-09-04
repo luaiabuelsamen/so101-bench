@@ -211,7 +211,12 @@ $(q, g)$ a policy trained on $N = 280$ demonstrations should observe.
 
 On our simulated plant the jaw calibration is $\kappa = 2.00$\,N per
 count, linear while the jaw is seated and quasi-static, with held-out
-RMSE 4.3\,N over 4--78\,N. These constants describe the modeled plant:
+RMSE 4.3\,N over 4--78\,N. The same fit carries an intercept of
+$-3.6$\,N, so $\kappa$ converts \emph{differences} in $\delta$ to
+differences in force; it is used here only in the quantization rule
+below, which depends on the slope alone, and a reader mapping an absolute
+$\delta$ to newtons with $\kappa$ and no intercept is off by that
+constant. These constants describe the modeled plant:
 the simulator implements the servo loop of Sec.~\ref{sec:formulation}, so
 its $\delta$-to-force map is clean by construction; real STS3215 hardware
 adds stiction, backlash, deadband, saturation, and thermal drift. Bench
