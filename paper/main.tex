@@ -110,6 +110,19 @@ $\delta = a[t{-}1] - s[t]$ can be computed after the fact; 16 of the 20
 public datasets we targeted passed our frozen inclusion gates
 (Sec.~\ref{sec:corpus}, which also details the caveats on action
 semantics).
+
+That property is what separates this channel from the alternatives, and
+the separation is concrete rather than rhetorical. Of 123 archived
+SO-100/SO-101 datasets we could read, every one records
+\texttt{observation.state} as joint positions alone --- no load, no
+current. The remedy of \citet{wong2026beyond} needs motor current or
+joint effort, which the recording stack caps at half scale on the gripper
+of every follower it connects (App.~\ref{app:hardware}); FACTR~2's
+estimator needs a purpose-collected dataset carrying external-force
+labels~\citep{oh2026factr2}; \citet{hwang2018virtual} needs a per-servo
+system identification performed on the hardware itself. Each is a
+capable method that cannot be applied to a log after the fact. The
+tracking error needs two fields those logs already store.
 The same signal supports runtime enforcement from bus telemetry alone
 (Sec.~\ref{sec:guard}).
 
