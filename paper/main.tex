@@ -474,6 +474,24 @@ so the linear choice is not leaving obvious compensation on the table,
 though learned predictors in the style of~\citet{oh2026factr2} remain
 untested as policy inputs. The seed budget leaves $C{-}B$ and
 $E{-}C$ open, so the value of the subtraction itself is not established.
+
+The most consequential open question concerns operating point. The grid
+runs at 280 demonstrations, 96\,px and 12k steps. At a larger budget --- 600
+demonstrations, 224\,px, 50k steps, where absolute success reaches 57--63\%
+rather than the 6--27\% reported here --- a two-seed comparison of the raw
+channel against the action-history baseline is indistinguishable (60\% vs.\
+57\%, with a within-policy seed spread of 12 points, four times the
+between-policy gap). That cell tested $C$ against $B$; $E$, the design this
+paper recommends, has not been run at that budget. Two readings are
+therefore live and we cannot currently separate them: that the channel's
+advantage is a small-data effect which disappears where policies become
+useful, or that the free-motion subtraction is precisely what survives
+scaling and the raw form is not. What the small-data ladder does support
+independently of either is that policies with no action-history input in
+any form plateau at 16--24\% lift commitment across three data recipes
+while channel-bearing policies reach 47--76\%: the information appears
+necessary, and it is the \emph{form} whose value at scale is unresolved.
+Running $E$ at the larger budget is the experiment we would prioritize.
 On real logs, $\delta$ depends on action semantics and timing that the
 corpus study characterizes only up to an integer-offset sweep. The corpus
 success proxy is unvalidated against ground truth, and multi-grasp tasks
