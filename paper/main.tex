@@ -227,10 +227,14 @@ seated quasi-static regime the signal is not a load reading, since free
 motion contributes following lag (which $e[t]$ removes) and fast
 transport contributes inertial deflection
 (App.~\ref{app:mech}, Fig.~\ref{fig:mech}). Encoder quantization yields a
-design rule: a safe-grip window of force margin $M$ is learnable through
-the channel only if the observed quantum is finer than
-$M / \kappa$; empirically the failure is a cliff whose location moves
-with the margin (Sec.~\ref{sec:validity}).
+design rule: a safe-grip window of force margin $M$ requires an observed
+quantum on the order of $M / \kappa$. We state this as an order and not as
+a threshold. Treated as a necessary condition it is falsified by our own
+sweep, which retains most of its success at quanta coarser than
+$M / \kappa$ in every margin tested; the rule fires conservatively, ahead
+of the degradation it predicts, by factors of 1.2--3.1 across three
+margins (Sec.~\ref{sec:validity}). What survives is the mechanism: the
+failure is a cliff, and its location moves with the margin.
 
 \subsection{System, task, and data}
 \label{sec:system}
@@ -297,9 +301,21 @@ plant model; their value is in mapping where the proxy's structure
 breaks. A stall detector on net travel and lag excess localizes seat
 events, and constructed adversarial negatives (free-space reversals,
 transport shakes) do not fire it within the declared envelope. Coarsening
-the observed channel collapses force-aware grasping once the quantum
-exceeds $M / \kappa$, and rerunning the sweep at a different margin moves
-the cliff accordingly.
+the observed channel eventually collapses force-aware grasping, and
+rerunning the sweep at a different margin moves the cliff accordingly ---
+which is the signature separating a resolution limit from the mere
+deletion of input bits. The collapse does not occur at $M / \kappa$: at a
+100\,N limit the channel holds 92\% and 75\% of its baseline placements at
+quanta of 4 and 8, both coarser than the predicted threshold, and the
+observed cliff runs 1.2--3.1$\times$ beyond the prediction across the
+three margins. The scale constant here is the pre-registered
+2.4\,N/count of the sweep rather than the $\kappa = 2.00$ of
+Sec.~\ref{sec:channel}; the discrepancy is reported rather than
+reconciled, since refitting a constant frozen before the sweep ran would
+defeat the pre-registration. \texttt{TYPICAL\_PEAK\_N}, a single median
+standing in for a contact peak-grip distribution spanning 19--56\,N, is
+the likely source, and the rule should be re-derived from that
+distribution before it is claimed quantitatively.
 
 \subsection{Observation design at 280 demonstrations}
 \label{sec:grid}
