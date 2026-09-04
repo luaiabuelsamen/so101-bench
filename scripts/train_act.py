@@ -114,6 +114,21 @@ class FastChunkDataset(torch.utils.data.Dataset):
         same[1:] = ep[1:] == ep[:-1]
         self.A_prev[same] = self.A[np.flatnonzero(same) - 1]
         self.first = ~same
+        # a[t-2] within the episode, and the index of the frame k steps back
+        # clamped to the episode start. Needed by hist2 and ghist; excess
+        # recomputes its own copy below so its behaviour is untouched.
+        self.A_prev2 = np.zeros_like(self.A)
+        same_2 = np.zeros(len(ep), dtype=bool)
+        same_2[2:] = ep[2:] == ep[:-2]
+        self.A_prev2[same_2] = self.A[np.flatnonzero(same_2) - 2]
+        self.first2 = ~same_2
+        starts = np.empty(len(ep), dtype=np.int64)
+        s0 = 0
+        for i in range(1, len(ep) + 1):
+            if i == len(ep) or ep[i] != ep[i - 1]:
+                starts[s0:i] = s0
+                s0 = i
+        self.back_k = np.maximum(np.arange(len(ep)) - 8, starts)
 
         if arm == "excess":
             # E (load_prior): delta minus the free-motion lag baseline.
@@ -184,6 +199,22 @@ class FastChunkDataset(torch.utils.data.Dataset):
             state = np.concatenate(
                 [s_n, (a_prev - self.a_mean) / self.a_std]
             )
+        elif self.arm == "hist2":
+            # B2: raw two-step action history. Same raw inputs as excess
+            # (s[t], a[t-1], a[t-2]), different representation, so E - B2
+            # isolates the free-motion subtraction with information held fixed.
+            a_prev = s if self.first[i] else self.A_prev[i]
+            a_prev2 = a_prev if self.first2[i] else self.A_prev2[i]
+            state = np.concatenate(
+                [s_n,
+                 (a_prev - self.a_mean) / self.a_std,
+                 (a_prev2 - self.a_mean) / self.a_std]
+            )
+        elif self.arm == "ghist":
+            # G: position context only, no a[t-1] in any form. Tests whether
+            # state history substitutes for the channel (zeng2026revisiting).
+            past = (self.S[self.back_k[i]] - self.s_mean) / self.s_std
+            state = np.concatenate([s_n, past])
         elif self.arm == "resid":
             state = s_n
             delta_target = (delta - self.d_mean) / self.d_std
@@ -283,12 +314,14 @@ def build_policy(state_dim: int, image_size: int = 96, aux: bool = False):
 def train(args):
     ds = load_dataset(args.root)
     quantum = 16.0 if args.arm == "delta_q16" else 1.0
-    mode = {"base": "base", "base_hist": "hist", "resid": "resid",
+    mode = {"base": "base", "base_hist": "hist", "base_hist2": "hist2",
+            "ghist": "ghist", "resid": "resid",
             "excess": "excess", "token": "token",
             "oracle": "oracle"}.get(args.arm, "delta")
     wrapped = FastChunkDataset(ds, mode, quantum,
                                max_episodes=args.max_episodes)
-    state_dim = 6 if args.arm in ("base", "resid") else 12
+    state_dim = 6 if args.arm in ("base", "resid") else (
+        18 if args.arm == "base_hist2" else 12)
     policy = build_policy(state_dim, args.image_size,
                           aux=(args.arm == "resid")).to(DEVICE)
     policy.train()
@@ -394,12 +427,14 @@ def evaluate(policy, data, args, shift_fn=None):
             z0 = scene.block_pos()[2]
             a_prev = None
             a_prev2 = None
+            s_hist = []          # observed states this episode, for ghist
             peak = 0.0
             if args.arm == "token":
                 from so101_bench.guard import JawGuard
                 gd = JawGuard(max_close_rate=1e9)   # detector only, no cap
             for _t in range(260):        # 260 x (2/30 s) ~ 17 s budget
                 s = torch.as_tensor(scene.state_ticks(), dtype=torch.float32)
+                s_hist.append(s)
                 s_n = (s - torch.from_numpy(data.s_mean)) / torch.from_numpy(data.s_std)
                 if args.arm in ("base", "resid"):
                     s_in = s_n
@@ -421,10 +456,34 @@ def evaluate(policy, data, args, shift_fn=None):
                 elif args.arm == "oracle":
                     f = float(scene.grip_force()) / 40.0
                     s_in = torch.cat([s_n, torch.full((6,), f)])
-                else:
+                elif args.arm == "base_hist2":
+                    ap = a_prev if a_prev is not None else s
+                    ap2 = a_prev2 if a_prev2 is not None else ap
+                    am = torch.from_numpy(data.a_mean)
+                    asd = torch.from_numpy(data.a_std)
+                    s_in = torch.cat([s_n, (ap - am) / asd, (ap2 - am) / asd])
+                elif args.arm == "ghist":
+                    # s[t-8], clamped to the episode start, matching back_k in
+                    # the dataset. s_hist already contains the current state.
+                    past = s_hist[max(0, len(s_hist) - 9)]
+                    past_n = (past - torch.from_numpy(data.s_mean)) / torch.from_numpy(
+                        data.s_std
+                    )
+                    s_in = torch.cat([s_n, past_n])
+                elif args.arm in ("delta", "delta_q16"):
                     d = (a_prev - s) if a_prev is not None else torch.zeros_like(s)
                     d_n = (d - torch.from_numpy(data.d_mean)) / torch.from_numpy(data.d_std)
                     s_in = torch.cat([s_n, d_n])
+                else:
+                    # Deliberately exhaustive. This chain used to end in a
+                    # catch-all that built the delta observation, so an arm
+                    # added to training without a branch here trained on its
+                    # own observation and rolled out on delta's -- same width,
+                    # no error, a plausible and wrong number.
+                    raise ValueError(
+                        f"no rollout observation defined for arm {args.arm!r}; "
+                        "add a branch here when adding an arm"
+                    )
                 obs = {
                     "observation.state": s_in.unsqueeze(0).to(DEVICE),
                     "observation.images.front": torch.as_tensor(
@@ -469,8 +528,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--arm",
-        choices=("base", "delta", "delta_q16", "base_hist",
-                 "resid", "excess", "token", "oracle"),
+        choices=("base", "delta", "delta_q16", "base_hist", "base_hist2",
+                 "ghist", "resid", "excess", "token", "oracle"),
         required=True,
     )
     parser.add_argument("--image-size", type=int, default=96)
