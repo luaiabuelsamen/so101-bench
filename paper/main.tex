@@ -447,9 +447,14 @@ rate gates, so it engages on aggressive closers and not on the gentle
 scripted teacher (App.~\ref{app:guard}), and on three learned checkpoints
 over identical paired episodes its
 first-generation detector (App.~\ref{app:guard}) reduced crush events
-from 85 to 3 of 180 (96\%), with median peak force dropping from
-33--131\,N to 13--26\,N; it also deletes successes one policy earned by
-over-gripping. Demonstrations must record applied
+from 85 to 3 of 180 (96\%) across the crush-capable tiers, with median
+peak force over those same episodes dropping from 33--92\,N to
+13--26\,N. It also removes every success in the experiment: 12 of 270
+unguarded become 0 of 270, and no guarded cell scores above zero. The
+policies are weak to begin with here (4.4\% unguarded, and the
+channel-free arm scores zero either way), so this is the guard deleting
+the few successes that existed rather than dismantling a working policy
+--- but a wrapper that never succeeds is not yet a deployable one. Demonstrations must record applied
 commands, and wrapped controllers must be closed-loop on contact.
 Details, figure, and integration accounting in App.~\ref{app:guard}. On
 hardware the register this guard would otherwise read is capped by the
@@ -650,12 +655,21 @@ requires spanning with seed expansion over multiple collections.
 The crush-elimination A/B predates the detector's final revision: on
 three learned checkpoints over identical paired episodes the
 first-generation detector (single-step stall test, 4-count budget)
-reduced crush events from 85 to 3 of 180 across crush tiers
-(Fig.~\ref{fig:guard}), with median peak force dropping from 33--131\,N
-to 13--26\,N; a rerun under the final detector is pending alongside
-hardware validation. The guard also deletes successes a policy earned by
-over-gripping: one quantized arm lifted 7/30 episodes at a 131\,N median,
-and those successes vanish under the cap. Integration requires two
+reduced crush events from 85 to 3 of 180 across the two crush-capable
+tiers (Fig.~\ref{fig:guard}), with median peak force over those same 180
+episodes dropping from 33--92\,N to 13--26\,N; across all nine cells,
+including the no-crush tier where crushing is impossible, the unguarded
+range is 33--131\,N. A rerun under the final detector is pending
+alongside hardware validation. The guard also deletes successes, and it
+deletes all of them: unguarded totals are 12 successes in 270 episodes,
+guarded totals are 0 in 270, and every one of the nine cells scores
+0/30 guarded. The losses fall on two arms --- the quantized arm gives up
+7/30 at a 131\,N median and 1/30 at the 120\,N tier, the delta arm 2/30
+and 2/30 --- while the channel-free arm scores zero with and without the
+guard. Since the unguarded rate is 4.4\%, this is a guard removing the
+few successes that existed rather than a working policy being
+dismantled, but it means the enforcement layer as tested trades all
+measured task success for a 96\% crush reduction. Integration requires two
 properties: demonstrations must record applied commands rather than
 intentions, and any wrapped controller must be closed-loop on contact,
 since the rate limiter breaks open-loop grasp timing by construction.
