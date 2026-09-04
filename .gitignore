@@ -18,3 +18,4 @@ paper/*.bbl
 paper/*.blg
 paper/*.fls
 paper/*.fdb_latexmk
+camera_check*.jpg
