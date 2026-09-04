@@ -137,7 +137,10 @@ external torque on torque-controlled arms~\citep{deluca2005sensorless,
 haddadin2017collisions}; virtual force sensors extend the idea to
 low-cost platforms~\citep{yen2019virtual}, and \citet{hwang2018virtual}
 estimate torque from commanded and measured positions on hobby servos,
-prior art for the raw channel; series-elastic actuation made
+prior art for the raw channel --- though their estimator is built on a
+dedicated per-servo dynamic system identification, so while its inference
+inputs are positions, the model it needs cannot be obtained from an
+archived log without access to the hardware that produced it; series-elastic actuation made
 deflection-as-force a design principle~\citep{williamson1995sea}.
 NeuralActuator~\citep{dou2026neuralactuator} learns per-actuator models
 for external-force perception on this servo class, and
