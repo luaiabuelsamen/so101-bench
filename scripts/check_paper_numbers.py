@@ -89,6 +89,20 @@ def main():
         want("E-C component", f"+{ec:.1f}")
         want("C-B component", f"+{cb:.1f}", "(the clean representation test)")
 
+    # corpus study: counts recomputed from the frozen scoring file
+    corpus = [r for r in json.loads(
+        (REPO / "results" / "corpus_delta_outcome.json").read_text())
+        if r.get("cohen_d") is not None]
+    n = len(corpus)
+    want("corpus datasets", f"{n} passed the frozen inclusion gates")
+    want("corpus episodes", f"{sum(r['episodes'] for r in corpus)} episodes")
+    want("prediction hits",
+         f"{sum(r['cohen_d'] > 0.5 for r in corpus)}/{n} datasets")
+    want("|d|>0.5 count",
+         f"$|d| > 0.5$ in {sum(abs(r['cohen_d']) > 0.5 for r in corpus)}/{n}")
+    want("significantly inverted",
+         f"{sum(r['cohen_d'] < 0 and r['d_ci'][1] < 0 for r in corpus)}/{n} significantly inverted")
+
     t = guard_totals()
     want("crush reduction", f"{t['crush_u']} to {t['crush_g']} of {t['eps_live']}")
     want("guarded successes", f"{t['succ_g']} of {t['eps_all']}")
