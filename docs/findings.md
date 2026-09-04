@@ -1121,3 +1121,37 @@ False interventions (guard deletes a success in the no-crush tier, where it had
 nothing to prevent): 9 of the 12 lost successes. Deletion counts are net per
 cell, so they are lower bounds -- the stored rows carry aggregate counts, not
 episode-level pairing.
+
+## Real teleop, 50 episodes (2026-09-03): Present_Load saturates through contact
+
+First real-hardware demonstration set on the SO-101 pair: 50 teleop episodes of
+adapter -> centre of tape roll, 21,476 frames, 155 MB. Recording captures
+observation.state as 6 positions PLUS 6 Present_Load, so delta and the
+reviewer's baseline are logged simultaneously with no extra work.
+
+The contact signature is present in every episode: all 50 have frames where the
+jaw command keeps closing while the jaw does not move (median 24 such frames,
+range 14-44). |delta| on the jaw peaks at a median of 16.6 deg.
+
+The result worth having: **Present_Load pins at 500 in 16.5% of frames, and all
+50/50 episodes touch saturation.** It is not spread evenly -- it coincides with
+contact, where |delta| averages 12.35 deg against 2.09 deg elsewhere. Inside
+those frames the register reports one constant number while delta still spans
+8.01-31.01 deg, i.e. 23 deg of range the baseline cannot express. Where load is
+not clipped the two track tightly (corr -0.853 unsaturated, -0.922 overall),
+which is the affine relation of the static bench data reappearing on real data.
+
+This sharpens the Appendix D argument from redundancy to range. The static data
+(scripts/appendix_d_channels.py) says load cannot beat delta because it IS delta.
+This says load additionally stops being delta exactly at the forces a grasp
+produces. Reviewer's baseline answered from two directions.
+
+CAVEAT, unresolved and load-bearing: 500 is almost certainly the servo's
+CONFIGURED torque limit (addr 48), not the register's full scale -- Feetech
+document Present_Load as full-scale 1000 = 100% duty. If so the honest claim is
+"under this arm's torque limit", a deployment fact, not a ceiling of the
+register. Read addr 48 on the follower before this goes in the paper; it is a
+one-line register read and it decides how strongly the paragraph can be written.
+
+Not claimed: nothing here is a policy result. These are demonstrations, not
+evaluations, and no arm has been trained on them.
