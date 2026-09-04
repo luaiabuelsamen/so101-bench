@@ -150,7 +150,16 @@ torque into behavior cloning on commodity arms. Our lag excess is a
 deliberate special case of FACTR~2's central idea, a linear free-motion
 baseline fit on positions alone; the restriction makes the signal
 retroactive, since every method above consumes live current or load
-telemetry, a calibration stage, or both. Closest to this work,
+telemetry, a calibration stage, or both. Their own input ablation is the
+closest independent test of our premise: comparing histories of joint
+positions, of positions and velocities, and of positions, velocities and
+tracking error, they report that the last ``consistently outperforms the
+other inputs, suggesting that tracking error provides useful information
+about controller effort and actuator response.'' That is measured on
+hardware, and it concerns the inputs to a force estimator rather than to
+a policy --- but it is the estimator-side form of the question our
+position-history control asks of a policy, namely whether joint history
+already subsumes the tracking-error channel. Closest to this work,
 \citet{wong2026beyond} identify the same channel and test it by
 subtraction: across four real-world force-critical tasks --- surface
 following, insertion, stiffness discrimination, force-based stopping ---
