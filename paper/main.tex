@@ -71,9 +71,10 @@ in the logs. The servos are proportional position controllers, so when the jaw m
 while the command deepens, and the gap reflects the servo's deflection
 under load. The authors of ACT state the physics directly: force ``is
 implicitly defined by the difference between'' leader and follower
-positions~\citep{zhao2023act}, and a recent intervention study shows that
-removing this discrepancy signal from ACT's action labels breaks
-force-critical tasks~\citep{wong2026beyond}. Yet the stack keeps one
+positions~\citep{zhao2023act}, and a recent intervention study shows on real
+hardware, across four force-critical tasks, that removing this
+discrepancy signal from ACT's action labels breaks
+them~\citep{wong2026beyond}. Yet the stack keeps one
 operand of that subtraction in the action labels and never provides the
 difference as an observation; the LeRobot Feetech driver reads only
 \texttt{Present\_Position} into the state vector, and the reference ACT
@@ -149,11 +150,23 @@ torque into behavior cloning on commodity arms. Our lag excess is a
 deliberate special case of FACTR~2's central idea, a linear free-motion
 baseline fit on positions alone; the restriction makes the signal
 retroactive, since every method above consumes live current or load
-telemetry, a calibration stage, or both. Closest in spirit,
-\citet{wong2026beyond} show by intervention that ACT's force competence
-depends on the leader-follower discrepancy implicit in its action labels; we place the
-signal explicitly in the observation and ask which form a small-data
-policy needs.
+telemetry, a calibration stage, or both. Closest to this work,
+\citet{wong2026beyond} identify the same channel and test it by
+subtraction: across four real-world force-critical tasks --- surface
+following, insertion, stiffness discrimination, force-based stopping ---
+they remove the leader--follower discrepancy from ACT's action labels and
+report severe failures in exactly the force-critical phases, restoring
+competence with torque proxies drawn from motor current or joint effort.
+That is the real-hardware form of the observability claim our grid can
+only make in simulation, and it establishes the core of that claim
+independently of us. Two differences remain, and they are the ones that
+matter for a fleet of archived data. Their intervention is subtractive,
+establishing that the cue matters; ours is additive, asking which
+function of it a small-data policy should observe. And their remedy needs
+current or joint-effort telemetry --- which the recording stack caps on
+the contact joint (App.~\ref{app:hardware}), and which none of the
+archived datasets in our corpus records --- while the channel studied
+here needs two position fields every one of those logs already stores.
 
 \textbf{Observation design in imitation learning.}
 ACT~\citep{zhao2023act}, Diffusion Policy~\citep{chi2023diffusion},
@@ -215,8 +228,12 @@ $(q, g)$ a policy trained on $N = 280$ demonstrations should observe.
 On our simulated plant the jaw calibration is $\kappa = 2.00$\,N per
 count, linear while the jaw is seated and quasi-static, with held-out
 RMSE 4.3\,N over 4--78\,N. The same fit carries an intercept of
-$-3.6$\,N, so $\kappa$ converts \emph{differences} in $\delta$ to
-differences in force; it is used here only in the quantization rule
+$-3.6$\,N. It is not a measured offset: the fitted forces span
+4--78\,N, so the smallest $\delta$ the fit ever saw is near 3.8 counts and
+$\delta = 0$ lies outside its domain --- the intercept is an
+extrapolation artifact, which is why the proportional law of
+Sec.~\ref{sec:formulation} carries none. Within the fitted range $\kappa$
+converts \emph{differences} in $\delta$ to differences in force; it is used here only in the quantization rule
 below, which depends on the slope alone, and a reader mapping an absolute
 $\delta$ to newtons with $\kappa$ and no intercept is off by that
 constant. These constants describe the modeled plant:
