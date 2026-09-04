@@ -44,8 +44,11 @@ predicting $\delta$ as an auxiliary training target does not: the channel
 must be observed, not merely learned. The strongest design appends a
 free-motion-compensated residual, the \emph{lag excess}, reaching 26.6\%
 success against 6.2\% ($+20.4$ points, $t = 4.7$), against a pre-declared
-resolution of 11.6 points at five seeds. Because the lag excess reads one
-more frame of action history than a one-step baseline, we also ran an
+resolution of 11.6 points at five seeds. A position-history control with no
+access to the channel reaches a comparable level, so this grid establishes
+that contact-relevant temporal information helps and not that this channel
+is uniquely capable. Because the lag excess reads one more frame of action
+history than a one-step baseline, we also ran an
 information-matched control; the advantage persists at $+11.9$ points
 (three seeds; 95\% CI $[+3.3, +20.7]$), below the bar at that seed count.
 On 546 episodes across 16 public teleoperation datasets the pre-registered
@@ -120,9 +123,9 @@ joint effort, which the recording stack caps at half scale on the gripper
 of every follower it connects (App.~\ref{app:hardware}); FACTR~2's
 estimator needs a purpose-collected dataset carrying external-force
 labels~\citep{oh2026factr2}; \citet{hwang2018virtual} needs a per-servo
-system identification performed on the hardware itself. Each is a
-capable method that cannot be applied to a log after the fact. The
-tracking error needs two fields those logs already store.
+system identification performed on the hardware itself. None of those requirements is
+satisfiable from a position-only log. The tracking error needs two fields
+such logs already store.
 The same signal supports runtime enforcement from bus telemetry alone
 (Sec.~\ref{sec:guard}).
 
