@@ -128,9 +128,12 @@ every input form. The tested auxiliary-prediction baseline recovers none
 of the direct-input gain: the same information moves performance as an
 input and not as a training target. And the lag excess is the only tested
 design to beat raw action history (26.6\% vs.\ 13.8\%, CI
-$[+2.8, +22.6]$); whether its edge over raw $\delta$ comes from the
-subtraction is not resolved at this budget, so we present it as the
-recommended instantiation, not a finding about the subtraction itself. On
+$[+2.8, +22.6]$), though that baseline reads one fewer frame of action
+history than the lag excess does; against a control matched on those raw
+inputs the margin is $+11.9$ points (CI $[+3.3, +20.7]$ at three seeds).
+Whether its edge over raw $\delta$ comes from the subtraction is not
+resolved at this budget, so we present it as the recommended
+instantiation, not a finding about the subtraction itself. On
 the public corpus, a pre-registered prediction fails: high $\delta$ at
 grasp time accompanies failed grasps, and the traces attribute this to
 operators over-commanding at contact (Sec.~\ref{sec:corpus}). A 40-line guard on the same telemetry removes
@@ -607,7 +610,7 @@ tie we observe is the expected behaviour of a known effect rather than an
 unexplained inconsistency --- which also means a single budget cannot identify
 the mechanism, and any arm we compare must be compared at more than one.
 
-A second caveat bears on the primary comparison specifically. The lag excess
+A second caveat bears on the comparison declared as primary. The lag excess
 $e[t] = \delta[t] - \hat{K} r[t]$ depends on $a[t{-}2]$ through the commanded
 rate, while the action-history baseline $B$ observes $s[t]$ and $a[t{-}1]$
 only, and $\hat{K}$ is far from zero (0.74--0.84 across joints, 0.80 on the
