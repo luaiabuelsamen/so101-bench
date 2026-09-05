@@ -212,11 +212,16 @@ only make in simulation, and it establishes the core of that claim
 independently of us. Two differences remain, and they are the ones that
 matter for a fleet of archived data. Their intervention is subtractive,
 establishing that the cue matters; ours is additive, asking which
-function of it a small-data policy should observe. And their remedy needs
-current or joint-effort telemetry --- which the recording stack caps on
-the contact joint (App.~\ref{app:hardware}), and which none of the
-archived datasets in our corpus records --- while the channel studied
-here needs two position fields every one of those logs already stores.
+function of it a small-data policy should observe. The hardware class
+differs too: they evaluate on an ALOHA-class pair with three cameras
+including a wrist-mounted view, where we target arms an order of
+magnitude cheaper whose archived logs carry one scene camera or none.
+And their remedy estimates joint torque from motor current, $\tau = k_t
+I$ --- telemetry the recording stack caps on the contact joint
+(App.~\ref{app:hardware}), that none of the archived datasets in our
+corpus records, and whose retroactive recovery from such logs they do
+not address --- while the channel studied here needs two position fields
+every one of those logs already stores.
 
 \textbf{Observation design in imitation learning.}
 ACT~\citep{zhao2023act}, Diffusion Policy~\citep{chi2023diffusion},
