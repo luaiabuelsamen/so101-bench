@@ -132,10 +132,13 @@ SO-100/SO-101 datasets we could read, every one records
 \texttt{observation.state} as joint positions alone --- no load, no
 current. The remedy of \citet{wong2026beyond} needs motor current or
 joint effort, which the recording stack caps at half scale on the gripper
-of every follower it connects (App.~\ref{app:hardware}); FACTR~2's
-estimator needs a purpose-collected dataset carrying external-force
-labels~\citep{oh2026factr2}; \citet{hwang2018virtual} needs a per-servo
-system identification performed on the hardware itself. None of those requirements is
+of every follower it connects (App.~\ref{app:hardware}); FACTR~2's estimator
+infers external torque as the residual between motor torque read from
+current and a predicted free-space torque, requiring no dedicated
+force-torque sensor at collection or deployment~\citep{oh2026factr2} ---
+but requiring current, which those logs do not carry;
+\citet{hwang2018virtual} needs a per-servo system identification
+performed on the hardware itself. None of those requirements is
 satisfiable from a position-only log. The tracking error needs two fields
 such logs already store.
 The same signal supports runtime enforcement from bus telemetry alone
