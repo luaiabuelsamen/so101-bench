@@ -646,8 +646,11 @@ This pattern is not peculiar to our setup:
 \citet{zeng2026revisiting} sweep context length against dataset size and find
 the ordering between short- and long-context policies reverses between 200 and
 1000 demonstrations, with dataset size disproportionately favouring the
-longer-context policy. Our 280-to-600 window sits inside that crossover, so the
-tie we observe is the expected behaviour of a known effect rather than an
+longer-context policy. Their own recommendation applies directly to us: they observe that
+datasets of 50--100 demonstrations remain common and ``encourage
+evaluating results across dataset sizes to ensure results hold at
+scale''. Our 280-to-600 window sits inside their crossover, so the tie we
+observe is the expected behaviour of a known effect rather than an
 unexplained inconsistency --- which also means a single budget cannot identify
 the mechanism, and any arm we compare must be compared at more than one.
 
