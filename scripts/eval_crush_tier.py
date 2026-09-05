@@ -60,6 +60,10 @@ def main():
     ap.add_argument("--crush", type=float, nargs="+", default=[120.0])
     ap.add_argument("--eval-seed", type=int, default=1000)
     ap.add_argument("--out", default="results/crush_tier_eval.json")
+    # One arm per process. Evaluating several checkpoints in a single process
+    # stalls at the second: the MuJoCo EGL context is not released between
+    # evaluate() calls, and the next renderer blocks on it at 0% CPU.
+    ap.add_argument("--only", default=None, help="evaluate just this arm key")
     args_cli = ap.parse_args()
 
     from lerobot.policies.act.modeling_act import ACTPolicy
@@ -67,6 +71,8 @@ def main():
     out = []
     print(f"{'arm':>13} {'crush':>7} {'success':>9} {'crushed':>8} {'dropped':>8}")
     for name, (ckpt, arm_key) in ARMS.items():
+        if args_cli.only and name != args_cli.only:
+            continue
         if not Path(ckpt).exists():
             print(f"{name:>13}   MISSING {ckpt}")
             continue
