@@ -1,0 +1,20 @@
+[
+  {
+    "arm": "E excess s0",
+    "arm_key": "excess",
+    "crush": 120.0,
+    "success": 0,
+    "crushed": 35,
+    "dropped": 2,
+    "episodes": 50
+  },
+  {
+    "arm": "E excess s0",
+    "arm_key": "excess",
+    "crush": 60.0,
+    "success": 0,
+    "crushed": 40,
+    "dropped": 0,
+    "episodes": 50
+  }
+]

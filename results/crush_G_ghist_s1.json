@@ -1,0 +1,20 @@
+[
+  {
+    "arm": "G ghist s1",
+    "arm_key": "ghist",
+    "crush": 120.0,
+    "success": 2,
+    "crushed": 38,
+    "dropped": 4,
+    "episodes": 50
+  },
+  {
+    "arm": "G ghist s1",
+    "arm_key": "ghist",
+    "crush": 60.0,
+    "success": 0,
+    "crushed": 44,
+    "dropped": 0,
+    "episodes": 50
+  }
+]

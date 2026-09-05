@@ -449,6 +449,27 @@ isolates observation design from enforcement and we would make it again,
 but it means the headline comparison does not exercise the property the
 channel is for.
 
+We attempted to exercise it after the fact and report the attempt as a
+failed prediction. Re-evaluating the existing checkpoints at 120\,N and
+60\,N crush tiers, we predicted in advance that the channel arms would
+beat the position-history control, since regulating grip into a band
+requires magnitude and that control carries almost none. They did not:
+the lag-excess arm places 0 of 50 at both tiers against 8 of 150 pooled
+for position history, and at 60\,N every arm places zero. Crush counts do
+not separate the arms either --- the single lag-excess seed falls inside
+the three-seed spread of the control at both tiers.
+
+The screen could not have supported the prediction, for a reason already
+in our own measurements: force bounds in the demonstrations do not bound
+the clone. A policy trained on grips at or below 40\,N still crushed 15
+of 30 episodes at the 60\,N tier, and every policy at the larger budget
+crushes heavily at 120\,N. Respecting a ceiling the demonstrations never
+respected is not available to imitation on this data, whatever the
+observation carries. Testing whether the channel enables force regulation
+therefore requires training against a crush tier, which we have not run,
+and that is the clearest single piece of future work these experiments
+identify.
+
 \begin{table}[t]
   \centering
   \caption{Placement success (\%), mean $\pm$ std over 5 seeds (500

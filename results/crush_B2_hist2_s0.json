@@ -1,0 +1,20 @@
+[
+  {
+    "arm": "B2 hist2 s0",
+    "arm_key": "base_hist2",
+    "crush": 120.0,
+    "success": 0,
+    "crushed": 20,
+    "dropped": 5,
+    "episodes": 50
+  },
+  {
+    "arm": "B2 hist2 s0",
+    "arm_key": "base_hist2",
+    "crush": 60.0,
+    "success": 0,
+    "crushed": 26,
+    "dropped": 0,
+    "episodes": 50
+  }
+]
