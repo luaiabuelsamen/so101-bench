@@ -44,14 +44,28 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from train_act import DEVICE, evaluate  # noqa: E402
 
-# (checkpoint, arm key for the observation builder)
+# (parent checkpoint dir, arm key for the observation builder). The weights sit
+# in a subdirectory whose name is NOT uniform -- seed 0 writes "ghist", seed 1
+# writes "ghist_s1" -- so resolve it by looking for config.json rather than
+# hardcoding, which silently failed two arms.
 ARMS = {
-    "G ghist s0": ("checkpoints/grid_G_ghist_s0/ghist", "ghist"),
-    "G ghist s1": ("checkpoints/grid_G_ghist_s1/ghist", "ghist"),
-    "G ghist s2": ("checkpoints/grid_G_ghist_s2/ghist", "ghist"),
-    "E excess s0": ("checkpoints/modal_E_s0/excess", "excess"),
-    "B2 hist2 s0": ("checkpoints/grid_H_base_hist2_s0/base_hist2", "hist2"),
+    "G ghist s0": ("checkpoints/grid_G_ghist_s0", "ghist"),
+    "G ghist s1": ("checkpoints/grid_G_ghist_s1", "ghist"),
+    "G ghist s2": ("checkpoints/grid_G_ghist_s2", "ghist"),
+    "E excess s0": ("checkpoints/modal_E_s0", "excess"),
+    "B2 hist2 s0": ("checkpoints/grid_H_base_hist2_s0", "hist2"),
 }
+
+
+def resolve(parent: str) -> Path | None:
+    """The directory under `parent` that actually holds a policy."""
+    p = Path(parent)
+    if (p / "config.json").exists():
+        return p
+    for sub in sorted(p.glob("*/")):
+        if (sub / "config.json").exists():
+            return sub
+    return None
 
 
 def main():
@@ -70,14 +84,15 @@ def main():
 
     out = []
     print(f"{'arm':>13} {'crush':>7} {'success':>9} {'crushed':>8} {'dropped':>8}")
-    for name, (ckpt, arm_key) in ARMS.items():
+    for name, (parent, arm_key) in ARMS.items():
         if args_cli.only and name != args_cli.only:
             continue
-        if not Path(ckpt).exists():
-            print(f"{name:>13}   MISSING {ckpt}")
+        ckpt = resolve(parent)
+        if ckpt is None:
+            print(f"{name:>13}   MISSING: no config.json under {parent}")
             continue
-        pol = ACTPolicy.from_pretrained(ckpt).to(DEVICE).eval()
-        st = np.load(Path(ckpt) / "norm_stats.npz")
+        pol = ACTPolicy.from_pretrained(str(ckpt)).to(DEVICE).eval()
+        st = np.load(ckpt / "norm_stats.npz")
         data = SimpleNamespace(**{k: st[k] for k in st.files})
         args = SimpleNamespace(arm=arm_key, image_size=96,
                                eval_seed=args_cli.eval_seed,
