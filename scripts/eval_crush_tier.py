@@ -53,7 +53,7 @@ ARMS = {
     "G ghist s1": ("checkpoints/grid_G_ghist_s1", "ghist"),
     "G ghist s2": ("checkpoints/grid_G_ghist_s2", "ghist"),
     "E excess s0": ("checkpoints/modal_E_s0", "excess"),
-    "B2 hist2 s0": ("checkpoints/grid_H_base_hist2_s0", "hist2"),
+    "B2 hist2 s0": ("checkpoints/grid_H_base_hist2_s0", "base_hist2"),
 }
 
 
