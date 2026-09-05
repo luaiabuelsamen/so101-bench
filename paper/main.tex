@@ -115,7 +115,14 @@ public datasets we targeted passed our frozen inclusion gates
 semantics).
 
 That property is what separates this channel from the alternatives, and
-the separation is concrete rather than rhetorical. Of 123 archived
+the separation is concrete rather than rhetorical. A recent survey of
+force sensing for manipulation learning organises the field into six
+families --- finger-mounted optical, finger force, finger audio, whole-arm
+joint torque, wrist force/torque, and combinations --- every one of which
+adds hardware, and observes that the large pre-training corpora do not
+carry force at all~\citep{xie2025forceful}. Recovering the quantity from
+logs that were never instrumented for it is not among the options it
+surveys. Of 123 archived
 SO-100/SO-101 datasets we could read, every one records
 \texttt{observation.state} as joint positions alone --- no load, no
 current. The remedy of \citet{wong2026beyond} needs motor current or
