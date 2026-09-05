@@ -122,9 +122,22 @@ def main():
     print(f"   (that difference is the honest statement, not 'identical')\n")
 
     # Paired sign test across poses: does delta beat current?
+    # NOTE (2026-09-04): this previously printed 2**-n_pose * 2 -- the p-value
+    # for a CLEAN SWEEP -- on the same line as the observed win count, with the
+    # conditional buried in the string as "if all". At 4/5 that reads as
+    # p=0.06 when the exact two-sided value is 0.375. main.tex carried the
+    # wrong number. Compute the p-value for the count actually observed.
+    from math import comb
     wins = sum(a > b for a, b in zip(dr, cr))
+    k = max(wins, n_pose - wins)
+    p_one = sum(comb(n_pose, i) for i in range(k, n_pose + 1)) / 2 ** n_pose
+    p_two = min(1.0, 2 * p_one)
     print(f"delta beats Present_Current in {wins}/{n_pose} poses "
-          f"(exact paired sign test p = {2**-n_pose * 2:.3f} two-sided if all)\n")
+          f"(exact paired sign test on the OBSERVED count: "
+          f"p = {p_two:.3f} two-sided, {p_one:.3f} one-sided)")
+    print(f"   for reference, a clean {n_pose}/{n_pose} sweep would give "
+          f"p = {2 ** -n_pose * 2:.3f} two-sided -- the smallest value "
+          f"reachable at n={n_pose}\n")
 
     # --- load as an affine function of delta --------------------------------
     x = chan["delta"].ravel()

@@ -1,7 +1,8 @@
 # Thread A — Observation histories and causal misattribution in imitation learning
 
 *Reading pass 2026-08-16. 15 papers read (abstract + intro + relevant sections via
-arXiv/ar5iv HTML), 3 sighted. Every URL below was actually fetched.*
+arXiv/ar5iv HTML), 3 sighted. Second pass 2026-09-03: +1 (Part 5, entry 16). Every URL
+below was actually fetched.*
 
 **Thesis being read against:** on low-cost robots, the binding constraint on learned
 manipulation is observability — not data scale, not model scale — and the missing
@@ -403,6 +404,119 @@ reconciliation with the copycat canon.
 
 ---
 
+## Part 5 — Second pass (2026-09-03): the execution-horizon literature
+
+*Added after the 2026-08-16 pass. One paper, surfaced late, that changes the thread's
+conclusion rather than extending it. Figure and table values read from the v2 HTML.*
+
+### 16. Zeng, Agarwal, Bati, Lee, Ancha, Tedrake — "Revisiting Open-Loop Execution in Robotics: Toward Reactive, Higher-Performing Policies", arXiv:2608.15938, Aug 2026 (v1 Aug 16, v2 Aug 19)
+<https://arxiv.org/abs/2608.15938> · <https://arxiv.org/html/2608.15938v2> · <https://revisiting-open-loop-action-chunking.github.io/>
+
+The first paper in this thread to make **expert non-Markovianity an independent
+variable**, and therefore the most direct competitor to our account. On
+FurnitureSimOneLeg they train identical policies on three demonstrator types: (a) a
+Markovian scripted FSM (current + previous state, OSC control), (b) the same FSM with
+an injected hidden latent plan — sticky state transitions held up to 16 steps, plus
+alignment maneuvers (3 iterations × 10 timesteps), (c) human teleop. Success against
+the open-loop execution horizon `T_exec` is an inverted U for (b) and (c) and
+**monotonically decreasing with optimal `T_exec*`=1 for (a)** — i.e. remove the
+expert's hidden state and the entire case for action chunking evaporates. Replicated
+across Push-T (ManiSkill and Drake variants), GearInsertion, and Kitchen (581 demos):
+every human-trained policy inverted-U, every Markovian-expert policy monotone to
+`T_exec*`=1. Compounding error — the field's standard justification for chunking — is
+measured and comes second: scaling 100 → 1000 demonstrations produces only "a slight
+tilt toward shorter execution horizons" (the Markovian-expert optimum is `T_exec`=4 at
+100 demos), and three rounds of HG-DAgger at 40 corrections each give "no noticeable
+shift" for the non-Markovian expert, because "HG-DAgger does not eliminate failures
+caused by cyclic or idle behaviors". The remedy is context: sweeping `T_o` ∈
+{2,4,8,12,16,20} on human demos turns the inverted U (peak `T_exec`=6 at `T_o`=2) into
+near-monotone decrease at `T_o`=16–20; at 1000 demos the best cell is `T_o`=12–20 with
+`T_exec`<4 at **93.2%**, against **90.6%** for the best short-context (`T_o`=2) policy
+at `T_exec`=6. Real hardware, 20 trials, 95% CI: SinglePillDispense 75% [53.1, 88.8] at
+(`T_o`=2, `T_exec`=8) → 90% [69.9, 97.2] at (`T_o`=8, `T_exec`=2); SlipIntoBaggie 80%
+[58.4, 91.9] → 85% [64.0, 94.8].
+`[Autocorrelation: high | Latent observable from current obs? no — but it is the expert's OWN hidden state, and it is recoverable from the expert's own observation history | Shortcut: not studied; the axis is horizon and context, not copying]`
+
+**Against the thesis — state the reviewer's version first.** Their Takeaway 3 is the
+generic form of our headline: append context, recover reactivity, win. Our `base_hist`
+arm ([s[t], a[t−1]]) is a one-step context extension and it matches `delta_input` at
+scale (B ≈ C, H100 result). A reviewer holding this paper says: the channel is not a
+force sensor, it is context; you found `T_o`=2 by another name; Zeng et al. get the
+same effect on five sim tasks and two real ones without mentioning force, and get more
+of it by going to `T_o`=16–20. That reading is available on our published evidence and
+we currently have nothing in the grid that refutes it.
+
+**For the thesis — what the paper cannot subsume.** Their non-Markovianity is
+**endogenous and incidental**: an injected latent plan, sticky FSM transitions,
+teleoperator idiosyncrasy. Delete it (their Markovian arm) and the problem is gone —
+which is exactly why long context fixes it, since a latent that lives in the
+*demonstrator's* head is inferable from the demonstrator's own past states and
+actions, and `T_o`=16–20 is simply enough tape to read it off. Our latent is
+**exogenous and irreducible**: contact force is a property of the world, not of the
+demonstrator, and no length of position history contains it unless the observation
+carries a force-bearing signal. Note what this does to their own control condition —
+in our task the Markovian arm may not be constructible at all: a demonstrator that
+keys only on the policy's observation cannot tell jaws-closed-on-block from
+jaws-closed-on-air, so the expert's non-Markovianity here is *forced by the physics*
+rather than injected for the experiment. If that holds it is a claim their taxonomy
+has no slot for, and it is the sharper version of our contribution: the general
+mechanism is theirs, the physical identification of the hidden state — it is the servo
+loop's tracking error, and it costs 6 scalars at `T_o`=1 — is ours.
+
+**What it costs us, concretely.**
+1. **Our grid is pinned at their worst corner and we never varied the axis.**
+   `scripts/train_act.py:47,270-271` sets `chunk_size = n_action_steps = 30` at 15 Hz —
+   a **2.0 s fully open-loop chunk** — with ACT's default `n_obs_steps = 1`
+   (`configuration_act.py:84`). Every arm A–F in `docs/task2_arms.md` runs at
+   (`T_o`=1, `T_exec`=30). Their result says the base arm's plateau is partly a
+   horizon artefact, and the autopsy agrees from our own side: base's decoded plan at
+   a stall is STATIC (`docs/overnight_plan.md:75`) — that *is* their failure mode.
+   Registered prediction: `T_exec*` should be strictly lower for C/E than for A. The
+   chunk=15 variant already floated at `docs/overnight_plan.md:20` is no longer a hunch
+   but a directional prediction from a published result.
+2. **The grid has no pure-context arm.** A–F vary channel content at fixed `T_o`=1;
+   nothing separates "context length" from "this specific channel". The missing cell is
+   **G: `s[t−k:t]`, no `a[t−1]`, k ≈ 8** — matched parameter count, no tracking error
+   computable from it. Zeng predicts G ≈ C. The observability thesis predicts C > G,
+   because position history alone cannot recover the commanded–achieved gap. This is
+   the single cheapest experiment that decides between the two accounts, and unlike the
+   Markovian-expert control it discriminates: both accounts predict the delta benefit
+   vanishes when the expert stops keying on contact.
+
+3. **Their Figure 8 is our C-vs-B collapse, already published.** They sweep context
+   length *and* dataset size together on FurnitureSimOneLeg with the scripted
+   non-Markovian expert. At **200 demos**, long-context (`T_o`=12–20) policies at
+   `T_exec`<4 *underperform* the short-context (`T_o`=2) baseline, whose best cell is
+   90.6% at `T_exec`=6. At **1000 demos** the ordering reverses: `T_o`=12–20 with
+   `T_exec`<4 reaches 93.2% and beats it. Their stated conclusion: "increasing dataset
+   size disproportionately improves performance of long-context policies at low
+   execution horizons." That is the *same shape* as our own scale result — C > B at 280
+   demos, C ≈ B at 600 (`findings.md:715-733`) — with B, the raw-action-history arm,
+   playing the context role. Our collapse is not an anomaly in need of explanation; it
+   is a replicated published effect with a named mechanism, and our 280 → 600 window
+   sits inside their 200 → 1000 crossover.
+
+   This converts the E-at-600 cell from "does it hold?" into a **discriminating test**,
+   because the two accounts predict opposite slopes:
+   - if E's edge over B is *context quality* (a better-conditioned input), `E−B` should
+     **shrink** from 280 → 600, tracking the same curve B already traced against C;
+   - if E's edge is *force information*, `E−B` should be roughly **budget-independent**,
+     because the channel's information content does not grow with demonstrations.
+
+   It also fixes the ordering for arm G. G at 600 alone is uninterpretable — Zeng et al.
+   say a context arm's performance is budget-dependent in a known direction, so a single
+   budget cannot distinguish "G ≈ C because context suffices" from "G ≈ C because 600 is
+   past the crossover." **G must run at 280 first**, where it is a grid-operating-point
+   cell (≈3 h on the Orin, ≈$2–3 on H100) and where Zeng predicts it should *lose*. That
+   cheap cell anchors the slope and is a prerequisite for spending anything at 600.
+
+**For the thesis:** supplies the general mechanism our result is a special case of,
+raises the bar from "history helped" to "history helped *more than context length
+explains*", and names the two experiments (`T_exec` sweep, arm G) that have to run
+before the channel claim is defensible.
+
+---
+
 ## Also sighted (fetched, not full entries)
 
 - **Chi et al., "Diffusion Policy: Visuomotor Policy Learning via Action Diffusion",
@@ -477,3 +591,35 @@ additively under privileged force, appears even on the reach variant, and comes 
 predictability > expert and a TF-loss drop. One sweep decides which regime we are in,
 turns the reconciliation into a measured claim no current paper makes, and hands the
 LeRobot PR and the corpus study their causal story.
+
+### Amendment, 2026-09-03 — a fourth named regime, and the confound it exposes
+
+Zeng et al. (entry 16, arXiv:2608.15938, Aug 2026) add a regime the pass above did not
+have: (5) *horizon regime* — history-shaped failures caused by **expert
+non-Markovianity** interacting with a policy's limited memory, whose signature is an
+inverted-U of success against open-loop execution horizon, and whose remedy is context
+length rather than any particular channel. Their Markovian-expert control (success
+monotone decreasing, `T_exec*`=1) is the cleanest demonstration in this thread that
+the history question is downstream of *what the expert conditions on*.
+
+This does not overturn the gap identified above, but it narrows it and moves the
+burden. The gap as stated — "nobody parameterizes the history question by what the
+appended channel physically observes" — still holds; Zeng et al. parameterize it by
+*who* the hidden state belongs to (the demonstrator) and answer with context length,
+never with channel content. But two claims in the summary above are now
+under-supported by our evidence:
+
+- **"Our channel is a physical measurement, not context"** is asserted, not measured.
+  B ≈ C is equally well explained by `a[t−1]` being one step of context. Deciding this
+  needs **arm G (`s[t−k:t]`, no `a[t−1]`, k ≈ 8)**: Zeng predicts G ≈ C, the
+  observability thesis predicts C > G.
+- **The whole grid is confounded by a fixed horizon.** A–F all run
+  `n_action_steps = chunk_size = 30` at 15 Hz (2.0 s open-loop) with `n_obs_steps = 1`
+  — the corner where Zeng et al.'s effect is largest. Part of what we attribute to the
+  channel may be the channel making a 2-second open-loop plan survivable. A `T_exec`
+  sweep on A vs C is now a prerequisite, not a nice-to-have.
+
+The channel-content substitution sweep proposed above is still the right experiment and
+is unaffected in design; it gains two axes (`T_exec`, and arm G as a sixth cell) and one
+prediction — if the observability account is right, C's advantage over G should *widen*
+as `T_exec` grows, because that is where an unobserved contact latent is most costly.

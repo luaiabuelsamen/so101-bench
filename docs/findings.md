@@ -1202,3 +1202,695 @@ sensible safety default silently costs the baseline its range.
 Worth one confirmation before it ships: read addr 48 on a second SO-101 that has
 been through lerobot connect, to show the value is written rather than inherited
 from how this particular arm was flashed.
+
+## The declared primary decomposes into two unresolved halves (2026-09-03)
+
+Desk work, no new runs, no new data — arithmetic on the frozen 5-seed grid
+cells in `results/grid_*_s{0..4}.json`. Surfaced while `projects-a5` was
+auditing arm E's inputs; the two findings are one finding.
+
+**What E actually consumes.** `train_act.py:118-131,190` computes
+
+    rate[t]   = a[t-1] - a[t-2]                 (a COMMAND rate, not q̇)
+    excess[t] = (a[t-1] - s[t]) - k_hat * rate[t]
+
+so arm E's input depends on **s[t], a[t-1] and a[t-2]**, while B ([s, a[t-1]])
+and C ([s, a[t-1]-s[t]]) depend only on s[t] and a[t-1]. k_hat is load-bearing,
+not a rounding term: per-joint [0.786, 0.763, 0.837, 0.838, 0.744, 0.801] from
+`checkpoints/modal_E_s0/excess/norm_stats.npz`, so ~80% of the rate is
+subtracted. `roadmap.md:10-14` already recorded that the implementation uses the
+command rate g[t−1] − g[t−2]; what nobody wrote down is the consequence — **E is
+a two-action-frame arm and B is a one-action-frame arm**, so the paper's declared
+primary comparison confounds the free-motion subtraction with an extra frame of
+action history.
+
+**The confound is already measured, and it is the smaller half.** C is exactly E
+without the a[t-2] information, so the existing cells decompose the headline:
+
+| comparison | value | Welch t (n=5) | what it isolates |
+|---|---|---|---|
+| **E − B** | **+12.8** | **2.61** | declared primary; confounded |
+| E − C | +4.8 | 0.86 | the k_hat·rate correction, i.e. the a[t-2] frame |
+| C − B | +8.0 | 1.44 | same information {s, a[t-1]}, different representation |
+
++4.8 and +8.0 sum to +12.8 exactly. So the one pair in the grid that clears the
+project's resolution bar **is significant only as the sum of two components that
+are each individually unresolved**, and neither component is separately claimable
+at this seed budget. That sentence is owed to the reader regardless of what any
+future cell returns, and it costs nothing to establish.
+
+Read carefully, this calibrates the alarm rather than raising it. The extra-frame
+contribution is bounded by E−C = +4.8 of the +12.8, and the larger half (C−B =
++8.0) is a clean representation test at matched information. The confound is real
+and disclosable; it is not evidence that the headline is an artefact.
+
+**Untouched by any of this:** E−A = +20.4 (t=4.7) and C−A = +15.6 (t=3.1). The
+channel-versus-nothing result does not depend on the decomposition.
+
+**The control the grid lacks.** B2 = [s[t], a[t-1], a[t-2]] — the same raw
+information as E, presented raw. E − B2 is the value of the fitted subtraction
+with information held fixed, which is what the title claims. Caveat to price
+before reading the result: B2 is 18-dim where B, C and E are all 12-dim, so it is
+information-matched but not width-matched, and at 280 demonstrations the extra
+width can cut either way. E ≥ B2 would therefore be strong; E < B2 would be
+ambiguous between representation and width.
+
+## Grid-wide information audit: only one arm pair holds content fixed (2026-09-03)
+
+Follow-on from the E/`a[t−2]` entry above. If the declared primary was
+confounded by an information asymmetry, the right response is to audit every arm
+rather than patch one comparison. Desk work on `scripts/train_act.py:118-232`
+and `src/so101_bench/guard.py:78-117`; no new runs.
+
+**What each arm's observation actually depends on:**
+
+| arm | input | raw information consumed | mean |
+|---|---|---|---|
+| A base | s[t] | {s[t]} | 6.2 |
+| D resid | s[t] (δ as aux *target*) | {s[t]} at input | 6.6 |
+| B base_hist | [s, a[t−1]] | {s[t], a[t−1]} | 13.8 |
+| C delta | [s, a[t−1]−s[t]] | {s[t], a[t−1]} | 21.8 |
+| E excess | [s, δ − K̂·r] | {s[t], **a[t−1], a[t−2]**} | 26.6 |
+| F token | [s, seat[t]·𝟙₆] | **{s[0..t], a[0..t−1]}** — see below | 21.8 |
+
+**F consumes unbounded history, and by more than E does.** `train_act.py:158-173`
+runs the frozen JawGuard detector causally over each episode; `guard.py:99,114`
+sets `seat_jaw` under `if self.seat_jaw is None` and never resets it. The latch
+is single-shot, so `seat[t]` is monotone non-decreasing within an episode and
+encodes "a stall was detected at **any** t′ ≤ t". Detection itself is local
+(`window=4`, `persist=3`), but the latch makes F's input a function of the whole
+episode prefix. F is the longest-context arm in the grid by a wide margin.
+
+**The consequence for the paper's framing.** The grid is presented as an
+observation-*design* study — which *form* of the channel a small-data policy
+needs, content held fixed. Sorting the arms by information consumed gives
+A = D < B = C < E < F. Of all the pairs the paper draws design conclusions from,
+**exactly one holds raw information fixed and varies only representation: C − B**
+(both see {s[t], a[t−1]}). Its value is +8.0, t = 1.44 — **unresolved**. Every
+other design comparison in the grid varies content as well as form.
+
+**But the story is not simply "more information wins", and F is why.** F consumes
+strictly more than E and does not beat it (21.8 vs 26.6), and F−B = +8.0 (t=1.5)
+is no larger than C−B despite F's unbounded prefix. So performance does not track
+information monotonically, which is evidence against reading the whole grid as an
+information ladder. The honest summary is narrower and worse for the design
+claim: the grid resolves *content* questions well (E−A = +20.4 t=4.7; C−A = +15.6
+t=3.1; D−A = +0.4 t=0.1, the observe-vs-predict result, which is clean because D
+and A are information-matched at the input) and resolves *form* questions
+poorly, because it was not built to hold content fixed.
+
+**What this does and does not change.**
+- Untouched: channel-versus-channel-free, and the observe-vs-predict result
+  (D ≈ A) — D's input is information-matched to A's, so that comparison is clean
+  and it is the grid's strongest design finding.
+- Weakened: any sentence of the form "form X of the channel beats form Y",
+  because only C−B is a matched form test and it does not resolve.
+- Arm B2 (`task2_arms.md`, frozen 2026-09-03) is the fix for E. There is no
+  matched control for F in the grid or planned, and F's latch means building one
+  would require a non-latched seat bit — worth noting, not worth a cell yet.
+
+## The guard section of main.tex has not absorbed the 2026-08-23 Pareto entry
+
+Re-verified `results/guard_ab.json` independently today (18 rows, 9 paired
+cells). The numbers reproduce the 2026-08-23 entry exactly:
+
+    successes  unguarded 12/270 -> guarded 0/270, and 0/30 in ALL NINE cells
+    crushes    85 -> 3 of 180 on the six crush-capable rows (96%)
+    peak force median, all 9 cells        : 33-131 N -> 13-26 N
+    peak force median, the same 180 eps   : 33- 92 N -> 13-26 N
+
+Two statements in `main.tex:438-457` still conflict with this, both flagged on
+2026-08-23 and both still present:
+
+1. **"it also deletes successes one policy earned by over-gripping."** It is
+   two policies (delta and delta_q16), five cells, and *every* success in the
+   experiment: 12/270 → 0/270, 0/30 in all nine cells. "One policy" is not a
+   softening of the result, it is a different result. The mitigating context
+   belongs in the same sentence and is enough on its own — the unguarded
+   policies are weak here (12/270 = 4.4%) and base scores 0 guarded *and*
+   unguarded, so this is "the guard removes the few successes that existed",
+   not "the guard destroys a working policy". Say that; it survives review and
+   the current phrasing does not.
+2. **Mixed denominators.** "from 85 to 3 of 180 (96%)" is computed over the six
+   crush-capable rows; "33--131 N to 13--26 N" in the same sentence is computed
+   over all nine cells, and the 131 is the `delta_q16` no-crush row where
+   crushing is impossible. On the same 180 episodes the range is 33--92 N. Both
+   numbers are individually correct and the sentence reads as one denominator.
+   The 2026-08-23 entry called this "reviewer bait; costless to fix".
+
+Nothing here is a new measurement — it is the same data, recomputed, showing the
+paper text drifting from the lab record over eleven days. Worth a standing check:
+`scripts/guard_pareto.py` reproduces all of it, so the guard paragraph can be
+verified against the data on every rebuild rather than by memory.
+
+## Appendix D's sign test reports the p-value of an experiment that did not happen (2026-09-04)
+
+Audit of App. D against `scripts/appendix_d_stats.py` and
+`blindspot/data/channel_j2.npz`. One error, with a root cause in code.
+
+**The claim.** main.tex: "$\delta$ attains the higher $R^2$ in four of five
+poses, which under an exact paired sign test is $p = 0.06$ --- suggestive at
+$n = 5$ poses and not significant."
+
+**The count is right and the p-value is not.** δ beats `Present_Current` in
+4/5 poses (pose 2 is the exception: R²_δ 0.473 vs R²_curr 0.503). The exact
+paired sign test at 4/5 gives **p = 0.375 two-sided** (0.188 one-sided).
+p ≈ 0.06 is the two-sided value for a clean **5/5** sweep — the smallest value
+reachable at n = 5 — i.e. the p-value of an outcome that did not occur.
+
+**Root cause, `appendix_d_stats.py:124-127` (before today's fix).** The script
+printed the observed win count and a constant `2**-n_pose * 2` on the same
+line, with the conditional buried in the format string as `"two-sided if all"`:
+
+    print(f"delta beats Present_Current in {wins}/{n_pose} poses "
+          f"(exact paired sign test p = {2**-n_pose * 2:.3f} two-sided if all)")
+
+Whoever transcribed it into the tex took the number and dropped the "if all".
+The script now computes the exact test for the count actually observed and
+prints the clean-sweep value separately as an explicitly labelled reference.
+
+**What changes and what does not.** The paper's *conclusion* was already right
+and is unaffected — "not significant… we report the ordering and decline to
+claim it". What must change is the number and one adjective: at p = 0.375 the
+ordering is not "suggestive", it is uninformative. This is the first error found
+today that moves a stated statistic in the flattering direction while the
+surrounding prose stays honest, which is the combination hardest to catch by
+reading.
+
+**Verified correct in the same pass, so the appendix is not under general
+suspicion:** `Present_Load = −4.70 (±0.10)·δ + 0.1`, R² 0.976 [0.969, 0.982],
+n = 60 — reproduces exactly. Per-pose δ/load agreement "identical to 3 decimals
+in 3 of 5 poses, max |difference| 0.017" — reproduces exactly (Table 4's
+0.261/0.279 rounds to 0.018, but the unrounded max is 0.017; the text is
+right). Mass-resolution figures 17 g at pose 3 and 41 g at pose 1 recompute
+from replicate/slope as 17.0 and 41.2; the three poor poses give 161, 170 and
+232 g against the stated "160--230".
+
+**Category note.** This is a fourth failure class, distinct from the three
+already logged: not drift, not a wrong claim on a right number, not a right
+number with no generator — a **right generator whose output was transcribed
+past its own conditional**. `check_paper_numbers.py` would not catch it, because
+the script's printed line was itself ambiguous. The fix is upstream: scripts
+should not print a statistic for a case other than the one observed.
+
+## Sec. 3.2 envelope audit: clean (2026-09-04)
+
+Recorded because a verified section is worth as much as a corrected one, and so
+neither session re-audits it. All three constants in `main.tex:209-227` reproduce
+exactly from `results/delta_characterization.json` (`pooled_fit`):
+
+| claim in Sec. 3.2 | stored value | verdict |
+|---|---|---|
+| κ = 2.00 N/count | `slope_n_per_count` = 1.99933 | exact |
+| held-out RMSE 4.3 N | `test_rmse_n` = 4.3103 | exact |
+| over 4–78 N | `force_range_n` = [4.0026, 78.1549] | exact |
+
+Fit is 468 train / 312 held-out points. The `±9.2 N` budget and `F_min = 20 N`
+that appear in `hardware/staircase_cal.py`'s docstring are project-internal
+envelope figures and are **not** claimed anywhere in main.tex, so there is
+nothing to reconcile there.
+
+**One completeness note, not an error.** The pooled fit carries
+`bias_n = −3.568`, and Sec. 3.2 reports only the slope. The intercept is ~83% of
+the held-out RMSE and implies δ = 0 maps to −3.6 N, which is unphysical as a
+force reading. It does not affect any claim the paper makes — κ is used only for
+the quantization design rule (quantum < M/κ), which depends on the slope alone —
+but a reader converting δ to newtons with κ and no intercept is off by a constant
+3.6 N. Worth one clause in the sentence that introduces κ.
+
+With this, the sections audited against their generating data are: the grid
+(decomposition + information audit), the guard (App. C), the corpus paragraph,
+App. D static and dynamic, and Sec. 3.2. Unaudited: Sec. 4.1's cliff/validity
+numbers, and the Method's problem formulation.
+
+**Newton-provenance check (same pass, prompted by `projects-a5`): also clean.**
+The worry was that App. D now contains real hardware measurements, so a reader
+returning to a body full of newtons might not carry the "simulated" qualifier
+with them. Every newton quantity in `main.tex` was traced:
+
+- Sec. 3.2 (L214): "On our simulated plant… These constants describe the modeled
+  plant" — explicit, twice, before the numbers.
+- Sec. 4.4 guard (L443): "all results are simulated" — explicit.
+- App. C (L641): "≈ +24 N on the simulated plant" opens the paragraph the
+  remaining guard forces (40, 99–127, 360, 10–28, 39, 33–92, 13–26, 33–131 N)
+  sit in.
+- App. D "What is still not measured" (L815): "No load cell has been applied, so
+  the newton scale is unmeasured and **the simulator's 2.0 N/count remains the
+  provenance of every force figure in the body**."
+
+The last one is the strongest possible placement — the hardware appendix itself
+tells the reader the body's newtons are simulator-derived, which is exactly where
+a reader in hardware mode will be. No gap found; no change needed.
+
+## Sec. 4.1 audit: the M/κ design rule is stated as a threshold the data does not support (2026-09-04)
+
+Last unaudited load-bearing section. The *mechanism* claims hold; the
+*quantitative* claim does not, and `findings.md:270-280` already said so in
+August without the paper absorbing it.
+
+**What the paper claims.** Sec. 3.2: "a safe-grip window of force margin $M$ is
+learnable through the channel only if the observed quantum is finer than
+$M/\kappa$". Sec. 4.1: "Coarsening the observed channel collapses force-aware
+grasping once the quantum exceeds $M/\kappa$." Both state $M/\kappa$ as *the*
+threshold.
+
+**What the sweep shows.** Taking $M = \text{crush} - 91$ N (the peak-grip
+stand-in the sweep uses) and reading the resolution table:
+
+| crush | M | M/κ (κ=2.4) | M/κ (κ=2.00) | quanta above threshold retaining ≥50% of q=1 |
+|---|---|---|---|---|
+| 100 N | 9 N | 3.8 | 4.5 | q=4 (100%), q=8 (82%) |
+| 120 N | 29 N | 12.1 | 14.5 | q=16 (59%) |
+| 160 N | 69 N | 28.8 | 34.5 | q=32 (55%) |
+
+Under the pre-registered κ = 2.4 the stated rule is violated in **3 of 3** crush
+conditions; under Sec. 3.2's κ = 2.00 in **2 of 3**. At a 100 N crush the channel
+is at 100% of baseline at q=4 and 82% at q=8, both above the threshold that
+predicts it should not be learnable at all. The rule is systematically
+**conservative** — it fires before the channel actually degrades — which is safe
+as a design guideline and wrong as a description of where the cliff is.
+
+**Two constants for one quantity.** `scripts/resolution_sweep.py:38` hardcodes
+`NEWTONS_PER_COUNT = 2.4` and its docstring labels it a PRE-REGISTERED
+PREDICTION; Sec. 3.2 defines κ = 2.00 from the pooled characterization. The paper
+writes the rule as $M/\kappa$ and defines κ = 2.00, but the experiment that tests
+it used 2.4. Those must be reconciled *by stating which is which* — **not** by
+adopting whichever fits better. 2.4 was frozen before the sweep ran, and refitting
+a pre-registered constant after seeing the data is the exact move this project's
+discipline exists to prevent. (For the record so nobody is tempted: κ = 2.00
+happens to fit the 160 N case almost exactly, 34.5 predicted against ~34 observed.
+That is not a reason to switch.)
+
+**What survives, and it is most of it.** The cliff is real and sharp (flat q=1→8,
+then a fall). It moves with the margin — q=16 leaves 1/30 at a 100 N limit and
+17/30 at 160 N — which is the signature distinguishing a genuine resolution limit
+from an artifact of deleting input bits, and it is the claim Sec. 4.1 most needs.
+At the real encoder resolution the proxy matches the oracle (11 vs 12, 17 vs 14,
+20 vs 17).
+
+**Suggested repair, minimal.** Say the quantum must be *some fixed multiple*
+finer than M/κ, or state the rule as necessary-but-not-tight: exceeding M/κ marks
+where degradation begins, and the observed halving point runs 1.2–3.1× beyond it.
+`findings.md:277-280` already reached this conclusion in August — "the mechanism
+is right, but the constant is not… the law should be re-derived from the
+peak-grip distribution before it is claimed as quantitative" — so the repair is to
+propagate an existing lab-record verdict into two sentences, not to run anything.
+
+## Bibliography audit: six entries carried invented given names (2026-09-04)
+
+Prompted by the `hwang2018virtual` error, run as a full pass over all 28 entries
+in `paper/refs.bib`, each checked against arXiv `citation_author` metadata or
+Crossref's publisher-deposited record.
+
+**Six entries had wrong author given names. In every case the surnames were
+correct and only the given names were wrong** — the signature of names being
+generated rather than looked up:
+
+| entry | bib said | actually |
+|---|---|---|
+| `hwang2018virtual` | Hwang, **Seonghyeon**; Minami, **Yuta** | Hwang, **Yoonkyu**; Minami, **Yuki** |
+| `dou2026neuralactuator` | Onyemelukwe, **Chidera**; Zhang, **Haoran**; "and others" | Onyemelukwe, **John U.**; Zhang, **Hangxing**; + 9 more authors |
+| `oh2026factr2` | Oh, **Jason**; Liu, **Sirui**; Tao, **Ruoshi**; Han, **Yumeng** | Oh, **Steven**; Liu, **Jason Jingzhou**; Tao, **Tony**; Han, **Philip** |
+| `liu2025factr` | Liu, **Sirui**; Li, **Jason Jingzhou**; Tao, **Ruoshi** | Liu, **Jason Jingzhou**; Li, **Yulong**; Tao, **Tony** |
+| `yamane2025sensorless` | Yamane, **Kazuki**; Li, **Yicheng**; Konosu, **Yusuke**; Inami, **Masashi** | Yamane, **Koki**; Li, **Yunhan**; Konosu, **Masashi**; Inami, **Koki** |
+| `torne2025pasttoken` | Liu, **Sirui** | Liu, **Yuejiang** |
+
+All six corrected.
+
+**The decisive evidence that these were generated, not mistyped:** "Liu, Sirui"
+appears as a wrong given name in **three separate entries** — `oh2026factr2`,
+`liu2025factr`, and `torne2025pasttoken` — none of which has an author by that
+name. Several of the invented names are real people attached to the wrong
+surname: the true first author of `liu2025factr` is Jason Jingzhou Liu, and the
+bib assigns "Jason Jingzhou" to *Li* while giving *Liu* the invented "Sirui".
+Tony Tao is real and appears as "Ruoshi Tao". A typo does not do this.
+
+**Why it matters more than a formatting slip.** `oh2026factr2` is the paper's
+central positioning reference — Sec. 2 says "Our lag excess is a deliberate
+special case of FACTR 2's central idea" — so four wrong given names sit on the
+citation the contribution is defined against. These are the errors most visible
+to exactly the reviewer best placed to judge the work, and they cost nothing
+intellectually.
+
+**Verified correct, so nobody re-checks them:** `zhao2023act`, `chi2023diffusion`
+(a Crossref title-match false positive in the first pass; the entry is exact
+against arXiv), `yen2019virtual`, `deluca2005sensorless`,
+`haddadin2017collisions`, `dehaan2019causal`, `wen2020copycat`,
+`calandra2017feeling`, `kim2024openvla` (18 authors), `mandlekar2021robomimic`
+and `alshiekh2018shielding` (both flagged by the script, both artifacts of LaTeX
+accent escaping — `Mart{\'i}n-Mart{\'i}n` and `R{\"u}diger` are correct),
+`hsu2024safetyfilter`, `brunke2022safelearning`, `wong2026beyond`,
+`zeng2026revisiting`.
+
+**Not errors, but decide before submission:** `black2024pi0`,
+`shukor2025smolvla` and `nvidia2025groot` use `and others`, hiding 14, 4 and 33
+authors respectively. Legitimate BibTeX, renders as "et al.", but most robotics
+venues want the full list. `torne2025pasttoken` uses "Torne Villasevil" where
+arXiv says "Torne"; PMLR's own record is `villasevil25a`, so the double surname
+is defensible and was left.
+
+**PAPER ACTION:** none — `refs.bib` is fixed. But no unverified given name should
+enter this file again; the check is one arXiv or Crossref lookup per entry and it
+is now scripted in this entry's method.
+
+## The reading notes are NOT fabricated: spot-check of thread A (2026-09-04)
+
+Follow-on from the bibliography audit. If given names in `refs.bib` were
+generated rather than looked up, the next surface at risk is
+`docs/reading_notes/thread_A_history_in_IL.md`, which carries ~40 specific
+quoted numbers from 15 papers and is the input to the paper's Related Work. Its
+header claims "Every URL below was actually fetched." That claim is testable.
+
+**Two entries spot-checked against full text, 8 numbers, all exact.**
+
+Entry 2, Wen et al. 2020 (arXiv:2010.14876, ar5iv full text):
+- notes: "HalfCheetah −38 → 820" — source table: BC-SO −38 ± 36, BC-OH 820 ± 60. ✓
+- notes: "Walker2D MSE 0.46e-2 vs 2.47e-2", described as the BC-OH policy being
+  "~5× more predictable-from-history than the expert's" — source: BC-OH 0.46 ±
+  0.02, expert 2.47 ± 0.07, column unit ×10⁻². Ratio 5.4×, and the direction is
+  right (lower MSE = more predictable). ✓
+- The abstract independently confirms the entry's qualitative framing, including
+  "removes excess information about the previous expert action nuisance
+  correlate, while retaining the information necessary to predict the next
+  action", which the notes paraphrase accurately.
+
+Entry 3, Wen et al. 2021 Keyframe-Focused (arXiv:2106.06452, ar5iv full text) —
+all six numbers, correctly rounded and correctly attributed to method and
+condition:
+
+| notes | source table |
+|---|---|
+| CARLA: BC-OH 33.0 vs BC-SO 42.7 | 33.000 ± 4.190 / 42.667 ± 8.668 |
+| keyframe-weighted 43.4 | Ours (step) 43.444 ± 0.786 |
+| CARLA-w/o-speed: 9.2 / 25.7 / 36.8 | 9.222 / 25.667 / 36.778 |
+
+**Verdict, with its limits stated.** The fabrication found in `refs.bib` was
+confined to author given names and does **not** extend to the reading notes'
+quantitative content. This is a spot-check — 2 of 15 entries, 8 of ~40 numbers —
+so it is evidence, not proof, and it was deliberately taken from two different
+papers rather than two claims in one entry. The notes' own "every URL was
+actually fetched" claim is supported.
+
+That distinction matters for triage: `refs.bib` metadata was typed from memory,
+while the reading notes record things actually read. Anything else in the repo
+should be sorted by which of those two it resembles.
+
+**QUALIFICATION, same day, from `projects-a5` and verified here.** The rule above
+is too strong as written. Thread B entry 4.5, on FACTR (arXiv:2502.17432), says
+the curriculum improves "unseen-object generalization by 43% and policy
+performance by 40% over force-as-input-without-curriculum". I fetched the
+abstract independently: **43% is exact, including its comparison condition**
+("significantly improves generalization to unseen objects by 43% compared to
+baseline approaches without a curriculum"); **40% does not appear, and neither
+does "policy performance"** — 0 occurrences of either, on /abs and /abs v1.
+
+Two things make this the refs.bib signature rather than a transcription slip.
+The fabricated 40% sits **in the same sentence as a correct 43%** — a plausible
+figure generated alongside a real one. And the note's very next sentence says
+"The abstract does not specify the actuators or the force source", so the writer
+knew they were working from the abstract only and still stated a number it does
+not contain. The header's "abs fetched" claim is true and protects nothing.
+
+So the accurate rule is narrower than "the notes record things actually read":
+
+> Where a reading note quotes a number, it is usually right and occasionally is
+> not, and the failure mode is a fabricated figure adjacent to a real one in the
+> same sentence. No header claim about fetching protects against it, because the
+> URL genuinely was fetched.
+
+Evidence that the notes are still much closer to source than `refs.bib` was, and
+that this is a qualification rather than a reversal: the eight thread-A numbers
+verified exactly, including rounding and condition attribution, and this same
+note's author list — "Liu, Li, Shaw, Tao, Salakhutdinov & Pathak" — is correct in
+both membership and order, where `refs.bib` had three of those given names wrong.
+
+**Did not reach the paper.** `main.tex:148,150` cites FACTR and FACTR 2 only
+qualitatively and quotes neither percentage, so there is no correction to make.
+
+**PAPER ACTION:** any number originating in the reading threads must have its own
+source check before entering `main.tex`; "it is in the notes" is not sufficient
+provenance. Currently no such number is in the paper, so this is preventive.
+
+## Thread D audit: one fabricated quotation, and a corroboration we are not using (2026-09-04)
+
+Took threads C/D while `projects-a5` worked B. Checked thread D's five
+source-quoting entries against arXiv full text or abstracts.
+
+**Entry 12, FACTR 2 — the highest-stakes note in the corpus, and it verifies.**
+This is the closest prior art and the paper's differentiation rests on its
+reading. Checked against `arxiv.org/html/2606.12406v1`:
+
+| note claims | source |
+|---|---|
+| "outperforms prior force-aware policies by over 17% in task progress" | verbatim ✓ |
+| "NIST Belt 0.494→0.767" | table: NIST Belt C 0.494, PC 0.767 ✓ |
+| "Motor current is readily provided on most robot arms, and is approximately related to motor torque" | verbatim ✓ |
+| estimator input `[q, q̇, Δq^d]` over a history window | confirmed: they compare histories of `q`, `(q,q̇)`, and `(q,q̇,Δq_d)` at 10/25/50 steps ✓ |
+| "AgileX Piper ($2.5k)" | **the price appears nowhere in the paper** — unsourced detail inside a sourced parenthetical |
+
+**And the note undersells it — this is the useful part.** FACTR 2 *ablates* the
+estimator's input modalities and reports: "Using (q, q̇, Δq_d) consistently
+outperforms the other inputs, suggesting that **tracking error provides useful
+information about controller effort and actuator response**." That is the closest
+prior art independently confirming, by ablation, that the tracking error carries
+information beyond joint positions and velocities — which is this paper's core
+claim, arrived at from the other direction. Neither the note nor `main.tex` uses
+it. It is stronger corroboration than anything else we have found today, and it
+comes from the one paper a reviewer is most likely to weigh us against.
+
+Related, and relevant to the `zeng2026revisiting` thread: they observe that "a
+standard behavior cloning policy… typically receives only the current observation
+rather than a long proprioceptive history such as the 50-step history used by
+NEXT."
+
+**Entry 13, Hang et al. 2018 — a fabricated quotation.** The note gives, in quotes,
+"For robotic manipulation, proprioception is translated as the combination of joint
+position and torque sensing." The abstract says: "we focus on grasping unknown
+objects using proprioception (**the combination of joint position and torque
+sensing**)." The *substance* is exact; the quoted wording is not. The note also
+states "[Abstract fetched; full text not read]", so it presents as a quotation
+something absent from the only text it claims to have read.
+
+This is a new failure class, distinct from the FACTR 40%: not a fabricated number
+but a **fabricated quotation with accurate meaning**. Lower severity — nothing
+downstream is wrong — but it fails verification if anyone checks, and it is the
+same underlying behaviour of generating plausible text adjacent to real material.
+
+**Verified exact:** entry 11 (Current as Touch, arXiv:2607.03529) 3 of 3 quoted
+passages; entry 14 (tendon proprioception, arXiv:2509.12969) 2 of 2.
+
+**PAPER ACTION:** cite FACTR 2's input-modality ablation as independent
+corroboration that tracking error carries information beyond `q` and `q̇`. It
+belongs wherever Sec. 1 or Sec. 2 states the observability claim, and it partly
+answers the standing objection that our learning evidence is simulated.
+
+## Thread C audit: clean on the load-bearing numbers (2026-09-04)
+
+Seven full-text-fetch entries. Checked the two whose numbers do the most work.
+
+**Entry 13 (Nakamura et al., arXiv:2511.18606) — every number exact, and it is the
+published analogue of our guard result.** Verified against the arXiv HTML:
+
+- "735 trajectories" — source: `|D| = 735` ✓
+- "80% vs 38%" — verbatim ✓
+- Table 2 aggregate columns (Fail / Stall / Success):
+
+| filter | Fail | Stall | Success |
+|---|---|---|---|
+| None | **62** | 0 | **38** |
+| Least Restrictive | 0 | **62** | **38** |
+| CBF No GP | 0 | 62 | 38 |
+| LatentCBF (GP) | 0 | 20 | **80** |
+
+The note's "unfiltered 62% failures / 38% success", "a least-restrictive filter
+achieves 0% failures but converts every failure into a stall — success stays at
+38%", and "their smooth CBF reaches 0% failures with 80% success" are all
+literal table values. I initially flagged the 62% as a possible unsafe inference
+from 100−38 given the paper separates Stall from Fail; that was wrong, and
+checking the table rather than the prose is what settled it.
+
+**Why this row matters to Sec. 4.4.** The Least Restrictive row — failures 62→0,
+stalls 0→62, successes unchanged at 38 — is the published, real-hardware form of
+the trade our guard exposes, and it is a *more favourable* form than ours: LR
+preserves its policy's 38% while ours goes 12/270 → 0/270. Their paper treats
+that as the baseline worth beating. Citing it puts our guard's number in the
+literature's own frame rather than leaving it as an unexplained zero.
+
+**Entry 14 (X-Safe, arXiv:2606.22278) — substantially verified.** "safety
+constraints encompass self-collision and collision with quasi-static environment
+objects" verbatim ✓; "not spilling liquid" as a named open problem ✓; the 0.02%
+collision figure appears in the results table ✓; AgileX Aloha VLA evaluation
+present ✓. One figure to re-check before use: the note says "~6% success
+degradation on Franka (vs 20% for the reachability baseline RAIL)", and the table
+row I located reads DP 76.0, RAIL 58.0, DP+X-Safe 70.0 — a 6-point degradation
+for X-Safe (matches) but 18 points for RAIL, not 20, and that row may be a
+different embodiment than the note's "Franka". Low stakes, nothing downstream.
+
+## Quotation audit of main.tex: closed, all three verified (2026-09-04)
+
+The fabricated-quotation class found in thread D (entry 13, Hang et al.) prompted
+a check of every quoted string in the paper. `projects-a5` verified them; recorded
+here because the result is the distinction that matters:
+
+| quoted string | source | result |
+|---|---|---|
+| `zhao2023act` "is implicitly defined by the difference between" | ar5iv 2304.13705, full text | exact, correct attribution |
+| `oh2026factr2` estimator-input ablation conclusion | arXiv html 2606.12406 | exact |
+| `hwang2018virtual` identification requirement | — | paraphrase, not quoted |
+
+**The fabricated-quotation class exists in the reading notes and does NOT appear
+in `main.tex`.** That is the difference between a submission risk and a
+housekeeping item, and today it is housekeeping.
+
+**Tooling note, worth more than it looks.** `arxiv.org/abs` returns the abstract
+only and will produce a false negative on any full-text quotation;
+`arxiv.org/html` 404s for older papers; `ar5iv.labs.arxiv.org` is the reliable
+full-text route. The ACT quotation would have been wrongly declared fabricated by
+anyone who stopped at `/abs` — the same failure mode we spent the day guarding
+against, arriving from the tooling side instead of the writing side.
+
+**PAPER ACTION:** none outstanding. Gate line: every quoted string in `main.tex`
+re-fetched before submission with date and source URL recorded; first pass done
+2026-09-04, all three exact.
+
+## B2 complete: the extra frame is not doing the work, at the point estimate (2026-09-04)
+
+Arm B2 (`[s, a[t−1], a[t−2]]`, 18-dim), three seeds at the frozen grid protocol,
+pre-registered in `task2_arms.md` before launch. Seeds 11 / 16 / 17, mean 14.67,
+sd 3.21. Recomputed here independently of `projects-a5`; both implementations
+agree to the decimal.
+
+| comparison | Δ | Welch t | 95% two-level CI | width |
+|---|---|---|---|---|
+| E − B2 | **+11.9** | +3.03 | [+3.3, +20.7] | 17.4 |
+| B2 − B | +0.9 | +0.22 | [−7.7, +9.0] | 16.7 |
+| E − B | +12.8 | +2.61 | [+2.8, +22.6] | 19.8 |
+
+**The frozen reading applies.** `task2_arms.md` registered E ≥ B2 as evidence for
+the subtraction and E < B2 as ambiguous. E > B2, so the ambiguous branch does not
+apply and the 18-vs-12-dim width caveat does not bite.
+
+**What it establishes:** against a control seeing *exactly* what E sees —
+s[t], a[t−1], a[t−2] — E retains +11.9 with an interval excluding zero. The
+effect is located in the *form* of the channel, not in the extra frame.
+
+**What it does not establish, twice over.**
+
+1. +11.9 is below the **15-point resolution bar** frozen before the cells ran.
+   The interval excludes zero and t = 3.03, but the rule exists precisely so a
+   favourable result cannot argue past it afterwards. Not resolved.
+2. **"The confound is bounded at ~1 point" overstates the data.** That reads the
+   B2 − B *point estimate* (+0.9) as a bound. The interval is [−7.7, +9.0] — the
+   extra frame's contribution could be as much as +9.0, which is most of E − B's
+   +12.8. A null at this width bounds nothing tightly. The defensible claim is the
+   direct matched comparison E − B2, which needs no decomposition; the
+   decomposition into "+0.9 frame, +11.9 subtraction" should not be written.
+
+**Design asymmetry, disclosed:** E has 5 seeds, B2 has 3. The bootstrap resamples
+each at its own n, but the comparison is not seed-matched and no seed-matched
+variant was pre-declared, so none was constructed after the fact.
+
+**PAPER ACTION:** the abstract's "its information-matched control is absent from
+this grid" and Limitations' "the matched two-step baseline is not in the present
+grid" became false when this cell landed. Both must carry the result. State it as
+E − B2 with its n, not as a decomposition, and state that it sits below the
+grid's own resolution bar.
+
+## The resolution bar is seed-scaled, and it predates the argument (2026-09-04)
+
+`projects-a5` asked whether invoking n=5-versus-n=3 to license E−B while
+conceding E−B2 is principled or is a standard chosen to fit. It is principled,
+and the decisive fact is provenance rather than reasoning.
+
+`scripts/fig_grid.py:65` computes `res = 15.0 * (3.0 / n_seeds) ** 0.5` and draws
+that band on Figure 2. It was committed **2026-08-18** (`395ae67`, "grid brackets
++ seed-scaled resolution band") — seventeen days before this discussion, before
+arm B2 existed, before today's audit. The 15-point figure in `task2_arms.md` is
+itself declared "at 3 seeds", under a protocol of seeds {0,1,2}. So the scaling
+is not invented to rescue a number; it is the rule already printed on the paper's
+central figure, and √(3/n) is the correct scaling for a difference of means at
+fixed σ_seed.
+
+| comparison | Δ | binding n | resolution | verdict |
+|---|---|---|---|---|
+| E − A | +20.4 | 5 | 11.62 | **clears, by ~2×** |
+| E − B | +12.8 | 5 | 11.62 | **clears** |
+| E − B2 | +11.9 | 3 | 15.00 | below |
+| C − B | +8.0 | 5 | 11.62 | below |
+| E − C | +4.8 | 5 | 11.62 | below |
+
+**Consequence: the abstract's original sentence was true and the walk-back was a
+de-improvement.** "The only design to beat an action-history baseline at our
+pre-declared seed resolution" is correct — at five seeds the bar is 11.62 and
+E−B = 12.8 clears it. Commit `86750b7` softened this to "close to the grid's
+declared resolution" on the mistaken premise that the bar is a flat 15.
+
+**And the E−B2 concession survives the most favourable treatment of its mixed n.**
+E has 5 seeds, B2 has 3, so the difference's SE is σ√(1/5+1/3) = 0.730σ against
+0.816σ for a 3-vs-3 pair. Scaling the 15-point bar by that ratio gives 13.4;
+E−B2 = 11.9 is below it either way. There is no reading of the mixed n under
+which B2's margin clears, which is what removes the suspicion of standard-fitting
+— the rule was applied conservatively in the one place it could have been bent.
+
+**PAPER ACTION:** restore the abstract's resolution claim for E−B, citing the
+seed-scaled bar rather than a flat 15, and state the scaling once where the bar
+is introduced. Keep the E−B2 concession exactly as written.
+
+## G complete: position history lands on C, and the strong claim does not survive (2026-09-04)
+
+Arm G (`[s[t], s[t−8]]`, 12-dim, no `a[t−1]` in any form), three seeds at the
+frozen grid protocol: 15 / 22 / 24, mean 20.33, sd 4.73. Recomputed independently
+of `projects-a5`; both implementations agree.
+
+| comparison | Δ | t | 95% CI | bar (binding n) | seeds needed |
+|---|---|---|---|---|---|
+| E − A | +20.4 | +4.68 | [+11.6, +29.0] | 11.62 (5) — **clears** | 2 |
+| **G − A** | **+14.1** | **+3.73** | **[+5.9, +22.0]** | 15.00 (3) — below | 4 |
+| E − B2 | +11.9 | +3.03 | [+3.3, +20.7] | 15.00 (3) — below | 5 |
+| G − B | +6.5 | +1.48 | [−2.7, +15.6] | 15.00 (3) — below | 16 |
+| E − G | +6.3 | +1.42 | [−3.2, +15.7] | 15.00 (3) — below | 18 |
+| **G − C** | **−1.5** | **−0.29** | [−11.7, +8.9] | 15.00 (3) — below | 314 |
+| B2 − B | +0.9 | +0.22 | [−7.6, +9.1] | 15.00 (3) — below | 899 |
+
+**The two comparisons that matter were not the ones we designed G to test.**
+
+`G − C = −1.5, t = −0.29`. An arm that observes only past *positions*, from which
+the tracking error is **not computable in principle**, performs indistinguishably
+from the raw tracking-error arm. `task2_arms.md` registered "Zeng predicts
+G ≈ C; the observability thesis predicts C > G". At the point estimate, Zeng's
+prediction is what occurred. The registered "G < C" is technically satisfied by
+1.5 points, which is not a result.
+
+`G − A = +14.1, t = 3.73, CI [+5.9, +22.0]`. Position history alone recovers
+**69% of E's advantage over base**, and this comparison excludes zero more
+strongly than either E − G (t = 1.42) or G − B (t = 1.48). It needs n = 4 to
+clear its own bar and has 3.
+
+**What this does to the thesis.** The strong form — *the servo tracking error is
+the enabling observation for contact commitment* — is not supported by this grid.
+What the grid supports is weaker and closer to `zeng2026revisiting`: **some form
+of temporal information beyond `s[t]` is necessary**, and which form is not
+resolved. E still leads every arm, and E − G = +6.3 favours the channel at the
+point estimate, but at 18 seeds required it is the least resolved comparison in
+the grid.
+
+**What survives untouched:** E − A = +20.4 (t = 4.68), the only comparison that
+clears its bar; D ≈ A, the observe-versus-predict result, which is
+information-matched and unaffected; and E − B2 = +11.9, which retired the
+`a[t−2]` confound.
+
+**Registered readings, honoured.** B2's frozen asymmetry applied and gave
+evidence for the subtraction. G's frozen prediction pair did not discriminate —
+neither account is confirmed or refuted. The cell was built to bound the
+long-context alternative and it does not bound it.
+
+**Not claimable, and named here so it is not written by accident:** G − B = +6.5
+("position history carries some of what the channel carries") is unresolved at
+16 seeds required. `projects-a5` flagged this one; the two above are the ones
+that run against us and neither of us had named them.
+
+**PAPER ACTION:** E − G is now the experiment that decides the paper's central
+claim, and it is ~18 seeds away (~24 h of Orin time at 1.6 h/cell). Until it
+runs, Limitations must state that a position-history control matches the raw
+channel arm at three seeds and that the channel-versus-context question is open.
+The paper must not say position history fails to substitute.

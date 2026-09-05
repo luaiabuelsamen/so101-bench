@@ -70,6 +70,8 @@ def main():
     ap.add_argument("--checkpoint", required=True)
     ap.add_argument("--arm", required=True,
                     choices=("base", "hist", "delta", "excess", "ghist"))
+    # NB --arm names the OBSERVATION, --checkpoint names the weights; the v2
+    # checkpoints use the same observation builders as their v1 counterparts.
     ap.add_argument("--port", default="/dev/ttyACM0")
     ap.add_argument("--robot-id", default="my_awesome_follower_arm")
     ap.add_argument("--camera", default="/dev/video0")

@@ -72,6 +72,40 @@ over-commanded logs, given the seat saturation found in Sec. 4.3.
 
 **Cost:** days; small GPU.
 
+**CORRECTION 2026-09-03 — C.2's declared metric cannot decide C.2's question.**
+Step 2 above specifies "held-out action prediction restricted to contact-phase
+frames" as the comparison. That metric is inert on this stack, and the project
+already has the evidence: `findings.md:697` (autopsy) reports teacher forcing at
+**~97% relative for BOTH arms in EVERY phase** — the networks learn the
+demonstrations equally well with and without the channel. The autopsy's whole
+point is that the discriminating signal lives in **closed-loop divergence**, not
+in prediction accuracy: base predicts the demos at 97% while its decoded plan at
+its own stalls contains 6 counts of motion against the demo lift's 471.
+
+So a paired stock-vs-+e comparison on held-out action prediction is predicted to
+return "no difference" regardless of which arm is right, and a null from it
+carries no information. Do not plan a bench week around it.
+
+What would actually decide C.2, in increasing order of cost:
+
+1. **The counterfactual probe, not the prediction metric.** The autopsy's zeroing
+   intervention (delta-policy stalls: zeroing the channel collapses the planned
+   lift 482 → 35 counts, 14x; restoring a demo-typical value gives 566) is a
+   closed-loop measurement that runs on a trained checkpoint without a simulator
+   rollout. Applied to a corpus-trained policy at corpus contact frames, it asks
+   whether the channel gates commitment *inside the network* — which is the
+   retroactivity claim's actual content. This is the cheap replacement and it
+   reuses `scripts/probe_counterfactual_commit.py`.
+2. **Wen's action-predictability probe** (thread A entry 2): an MLP predicting
+   `a[t]` from past actions alone, compared against the expert's own
+   predictability. Discriminates shortcut-copying from channel use, and unlike
+   teacher-forced accuracy it is *designed* to be sensitive where TF is flat.
+3. Rollout on a rebuildable corpus scene — the step-3 stretch, unchanged and
+   still the only thing that closes it properly.
+
+Item 1 is desk work on existing code and should be run before C is scheduled at
+all; if it is flat too, C's premise is what is wrong, not its metric.
+
 ### D. E−C seed expansion — is the *subtraction* the contribution?
 
 The scientifically central open pair. If E−C resolves, lag compensation is
@@ -247,3 +281,96 @@ framing waits on which experiments land, per the review's closing advice.
 Tag the freeze commits so pre-registration timestamps are findable without
 hashes in the prose: `prereg-grid` → d4077d5 (task2 arm definitions),
 `prereg-corpus` → 7b7a818 (phase 3 / corpus protocol).
+
+---
+
+## Submission gate: reconcile findings.md against main.tex (added 2026-09-04)
+
+**Why this exists.** On 2026-09-03/04 the paper was found to be behind its own
+lab record three separate times, all three correct in `findings.md` since August
+and never propagated:
+
+| lab-record verdict | where it sat | how long |
+|---|---|---|
+| guard deletes *every* success (12/270 → 0/270), not "one policy"; mixed denominators "costless to fix" | `findings.md` 2026-08-23 | 11 days |
+| corpus counts are 10/16 and 7/16, not 9/16 and 6/16 | frozen `corpus_delta_outcome.json`, 2026-08-16 | 18 days |
+| the M/κ constant "should be re-derived… before it is claimed as quantitative" | `findings.md` 2026-08-18 | 17 days |
+
+All three were found by accident, in the course of auditing something else.
+
+**Why `check_paper_numbers.py` cannot cover it.** That script closes one
+direction only — the tex quoting a number the results contradict. It is blind to
+a lab-record entry that says *"the constant is not right"* when the tex states no
+number at all, which is exactly the quantization case. It is equally blind to a
+correct number carrying a wrong claim (the guard's "one policy" sat beside a
+correct 7/30). Those need a reader.
+
+**The gate.** Before submission, one pass reading `findings.md` against
+`main.tex`, entry by entry, asking of each: does the paper state this, contradict
+it, or ignore it? Not a habit — a checklist item with an owner and a date, because
+three misses in one day is a systematic gap and the two mechanical checkers we
+have both miss it by construction.
+
+**Convention going forward.** A `findings.md` entry whose conclusion the paper
+must carry ends with an explicit line so the pass has something to grep for:
+
+    **PAPER ACTION:** <what main.tex must say or stop saying>
+
+Back-tagging the ~40 existing entries is a bounded one-time job and is the
+cheapest way to make the gate mechanical rather than attentive.
+
+### Bibliography: verified 2026-09-04, re-run if entries are added
+
+Six of 28 entries carried invented author given names — surnames correct,
+given names wrong, with "Liu, Sirui" appearing in three unrelated entries that
+have no such author. All corrected; full table in `findings.md`. The affected
+entries included `oh2026factr2`, the paper's central positioning reference.
+
+**Standing rule:** every entry added to `refs.bib` is exported from arXiv or
+Crossref, never typed. The check is one lookup per entry against arXiv's
+`citation_author` metadata or Crossref's publisher-deposited record, and it
+takes under a minute for the whole file.
+
+Two open style decisions, not errors: `black2024pi0`, `shukor2025smolvla` and
+`nvidia2025groot` use `and others` (hiding 14, 4 and 33 authors) — legitimate
+BibTeX, but most robotics venues want full lists.
+
+### Read `wong2026beyond` in full before submission
+
+Positioned from the abstract only (`related_table.md`, cell 4). It is the
+closest published work to this paper — same channel, real hardware, four
+force-critical tasks — so abstract-only is enough to position against and not
+enough to be sure the paper does not restate something in their discussion.
+MDPI-style access was not the blocker here; nobody has read it.
+
+### Open item found by the first pass (2026-09-04)
+
+`findings.md:1202` records an unmet precondition that has not propagated:
+*"Worth one confirmation before it ships: read addr 48 on a second SO-101 that
+has been through lerobot connect, to show the value is written rather than
+inherited from how this particular arm was flashed."*
+
+App. D §"The ceiling belongs to the stack, not to this arm" concludes it is
+"a property of the ecosystem rather than of one bench" on a register read from
+**one** arm. The code-path argument carries most of the weight and is strong, but
+the measured leg is n=1 and the paper does not say so.
+
+**A better test than the one the entry proposes.** A second *follower* only
+replicates. The leader discriminates:
+
+- `so_follower.py:172-175` writes `Max_Torque_Limit=500` (plus
+  `Protection_Current=250`, `Overload_Torque=25`) — **gripper only**.
+- `so_leader.py:127-131` `configure()` calls `disable_torque()`,
+  `configure_motors()`, and sets `Operating_Mode` — **no torque-limit write**.
+
+Both arms came from the same vendor and flash; only the follower goes through the
+path that writes 500. So follower gripper = 500 with leader gripper = 1000 proves
+the value is *written by the stack*, not inherited. That is the claim App. D
+actually makes, and it costs one register read.
+
+**Footgun, and the reason this is not already done.** Connecting to the leader
+with a *follower* class would write 500 to it and destroy the evidence
+permanently — the test is unrepeatable on that arm once contaminated. Read addr 48
+over a raw bus handle; never via `SOFollower.connect()`. Until it is run, App. D
+should disclose that the register read is n=1 and that the code path is the
+load-bearing evidence.

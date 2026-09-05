@@ -89,7 +89,7 @@ def decode_video_cache(root: Path, image_size: int, n_frames: int) -> np.ndarray
 
 class RealChunkDataset(torch.utils.data.Dataset):
     def __init__(self, root: Path, arm: str, image_size: int = 96, ghist_k: int = 8,
-                 trim_static: bool = True):
+                 trim_static: bool = True, load_mask: bool = True):
         import pyarrow as pa
         import pyarrow.parquet as pq
 
@@ -141,7 +141,15 @@ class RealChunkDataset(torch.utils.data.Dataset):
             A_prev2[same2] = self.A[np.flatnonzero(same2) - 2]
             self.rate = np.where(same2[:, None], self.A_prev - A_prev2, 0.0).astype(np.float32)
             delta_all = np.where(same[:, None], self.A_prev - self.S, 0.0)
-            free = self.A[:, 5] > np.quantile(self.A[:, 5], 0.30)
+            # Free motion means UNLOADED. The sim heuristic -- jaw command above
+            # its 30th percentile -- does not transfer: on real teleop the jaw
+            # sits near-closed most of the time, so that mask sweeps in gripping
+            # frames and inflates k_hat to 2-3 against sim's ~0.8. The recording
+            # carries Present_Load, so use it directly.
+            if load_mask:
+                free = np.abs(state[:, 6:12]).max(1) < 100.0
+            else:
+                free = self.A[:, 5] > np.quantile(self.A[:, 5], 0.30)
             self.k_hat = np.zeros(6, np.float32)
             for j in range(6):
                 r, d_ = self.rate[free, j], delta_all[free, j]
@@ -252,6 +260,8 @@ def main():
     ap.add_argument("--image-size", type=int, default=96)
     ap.add_argument("--ghist-k", type=int, default=8)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--jaw-mask", action="store_true",
+                    help="fit k_hat on the old jaw-command mask instead of load")
     ap.add_argument("--keep-static", action="store_true",
                     help="keep the stationary prefix of each episode (default: drop it)")
     args = ap.parse_args()
@@ -261,7 +271,8 @@ def main():
 
     print(f"arm={args.arm} steps={args.steps} device={DEVICE}")
     ds = RealChunkDataset(Path(args.root).resolve(), args.arm, args.image_size,
-                          args.ghist_k, trim_static=not args.keep_static)
+                          args.ghist_k, trim_static=not args.keep_static,
+                          load_mask=not args.jaw_mask)
     state_dim = 6 if args.arm == "base" else 12
     print(f"  {len(ds)} frames, state_dim={state_dim}")
 

@@ -32,7 +32,11 @@ PY = "/home/jetson3/projects/clean_env/venv/bin/python"
 CKPT = {"base": "checkpoints/real50_base_s0",
         "excess": "checkpoints/real50_excess_s0",
         "ghist": "checkpoints/real50_ghist_s0",
-        "base_trim": "checkpoints/real50_base_trim"}
+        "base_trim": "checkpoints/real50_base_trim",
+        # v2 pair: both trimmed of the dead prefix, excess with the load-based
+        # k_hat. Matched treatment, so they differ only in the observation.
+        "base_v2": "checkpoints/real50_base_v2",
+        "excess_v2": "checkpoints/real50_excess_v2"}
 
 
 def wilson(k, n, z=1.96):
