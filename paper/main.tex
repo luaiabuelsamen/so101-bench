@@ -119,12 +119,15 @@ the separation is concrete rather than rhetorical. A recent survey of
 force sensing for manipulation learning organises the field into families
 --- finger-mounted optical, finger force, finger audio, joint torque,
 wrist force/torque, and combinations --- every one of which adds
-hardware, and notes that generalist robot foundation models are
-pre-trained on limited modalities, vision, language and robot joint or
-end-effector data, instancing Gemini Robotics at 2000--5000 episodes per
-task as not including force~\citep{xie2025forceful}. Recovering the
-quantity from logs never instrumented for it is not among the options
-that survey catalogues. Of 123 archived
+hardware. That survey states the premise of this work in its own terms:
+``current robot foundation models focus exclusively on visual input and
+position control. Relying on position alone might not be sufficient to
+achieve true dexterity, as small errors in position may lead to large
+errors in force in stiff systems''~\citep{xie2025forceful}. It instances
+Gemini Robotics, 2000--5000 episodes per task over twelve months, as not
+including force. Recovering the quantity from logs never instrumented for
+it is not among the options it catalogues, and the phrase ``tracking
+error'' does not appear in it. Of 123 archived
 SO-100/SO-101 datasets we could read, every one records
 \texttt{observation.state} as joint positions alone --- no load, no
 current. The remedy of \citet{wong2026beyond} needs motor current or
@@ -232,16 +235,15 @@ corpus records, and whose retroactive recovery from such logs they do
 not address --- while the channel studied here needs two position fields
 every one of those logs already stores.
 
-That survey's own conclusion runs against the premise of this work: it
-finds that outside a few tasks such as pouring, insertion and handling
-delicate objects, ``the performance of imitation learning models is not
-at a level of dynamics where force truly
-matters''~\citep{xie2025forceful}. We report the disagreement rather than
-omit it. Our grid and the intervention study of \citet{wong2026beyond}
-are two independent results on the other side, and the tasks that survey
-excepts --- insertion and delicate handling --- are the class our
-force-critical task belongs to, so the disagreement may be narrower than
-it reads.
+\citet{xie2025forceful} temper this: they judge that outside a few task
+classes ``the performance of imitation learning models is not at a level
+of dynamics where force truly matters''. The exceptions they name are
+pouring precise volumes, tight-tolerance insertion, and grasping fragile
+and deformable objects --- the last being the class our force-band task
+belongs to. We read that as bounding where a force channel pays rather
+than as disputing that it does, and we adopt the bound: the grid measures
+observation design on a force-critical task, not manipulation in
+general.
 
 \textbf{Observation design in imitation learning.}
 ACT~\citep{zhao2023act}, Diffusion Policy~\citep{chi2023diffusion},
