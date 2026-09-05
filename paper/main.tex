@@ -758,8 +758,15 @@ enabling observation is not established by these experiments. That
 proposition and the long-context account of \citet{zeng2026revisiting} are
 both consistent with what we measured. We do not claim that position
 history fails to substitute for the channel; at three seeds we cannot
-distinguish the two, which is a different statement and the one the data
-supports.
+distinguish the two, which is a different statement and the one the
+success rates support. The observations themselves are not equivalent.
+Measured against ground-truth grip force over the 80,907 demonstration
+frames where an eight-step lookback exists, the joint-history signal
+detects contact markedly worse than the tracking error (AUC 0.78 against
+0.95, the direction inverted for joint history since a blocked jaw moves
+\emph{less}) and carries far less force magnitude ($R^2 = 0.12$ against
+$0.76$ within contact frames). Whatever produces $G$'s success, it is
+unlikely to be a force estimate.
 $C{-}B$ is by contrast a clean representation test, since $C$ and $B$ observe
 the same raw quantities --- and it does not resolve at our seed budget
 ($+8.0$, $t = 1.44$). The decomposition is exact:
