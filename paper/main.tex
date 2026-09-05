@@ -261,8 +261,16 @@ torne2025pasttoken}. Our grid places both effects in one table.
 \textbf{Grasp monitoring and runtime safety.} Industrial grippers ship
 grasp verification from actuator feedback as firmware: Robotiq's
 object-detection register fires on commanded-vs-actual discrepancy under
-a current limit~\citep{robotiq2019manual}, and SCHUNK advertises
-workpiece-loss detection from an integrated encoder~\citep{schunk_egk};
+a current limit, and the two are separable in their firmware --- the
+current limit stops the fingers, while the detection flag is defined on
+finger position against requested position~\citep{robotiq2019manual}.
+That is the observation-and-enforcement split of this paper, shipping in
+a commercial gripper. The same manual records its failure mode: detection
+``may not detect an object even if it is successfully grasped'', for
+instance a thin object in a fingertip grasp --- a binary detector cannot
+separate a light grasp from none, which is the distinction between
+detecting contact and measuring it. SCHUNK advertises workpiece-loss
+detection integrated with gripping-force maintenance~\citep{schunk_egk};
 tactile alternatives require added sensing~\citep{calandra2017feeling}.
 Academic safety filters for learned policies~\citep{alshiekh2018shielding,
 hsu2024safetyfilter, brunke2022safelearning} consume a dynamics model, a
