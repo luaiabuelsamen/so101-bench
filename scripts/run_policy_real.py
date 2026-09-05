@@ -35,6 +35,16 @@ failure and is informative about the chain rather than about the method.
         --arm base --max-steps 300
 """
 
+import os
+import sys
+
+# Re-exec under the project venv if launched with another interpreter. The
+# system python has NumPy 2.x and cannot import this pipeline's cv2/torch build,
+# which fails deep in an import with a message that does not name the cause.
+_VENV = "/home/jetson3/projects/clean_env/venv/bin/python"
+if os.path.realpath(sys.executable) != os.path.realpath(_VENV) and os.path.exists(_VENV):
+    os.execv(_VENV, [_VENV] + sys.argv)
+
 import argparse
 import time
 from pathlib import Path
