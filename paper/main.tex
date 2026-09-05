@@ -861,11 +861,15 @@ past seat, and a closing-rate limit. Two regimes follow from the
 detector's thresholds. On aggressive closers it binds: learned policies
 commanding fast or deep closes are capped near 40\,N against raw peaks of
 99--127\,N, and an open-loop clamp reference commanding 360\,N grips is
-held to 10--28\,N. On the gentle closed-loop teacher ($\sim$0.3 counts
-per frame in its fine pass, below both detection gates) it never fires: a
+held to 10--28\,N. On the gentle closed-loop teacher it never fires,
+and all three of its mechanisms have to be accounted for: the teacher's
+$\sim$0.3 counts per frame in its fine pass sits below both detection
+gates, and the closing-rate limiter --- which applies unconditionally,
+before and independent of seat detection --- is set at 4 counts per
+policy step against roughly 0.6 demanded, a factor of seven clear. A
 paired run shows 25/30 placements wrapped versus 28/30 raw at
-statistically indistinguishable $\sim$39\,N grips, i.e.\ no enforcement
-occurred and the run measures wiring overhead only. Whether
+statistically indistinguishable $\sim$39\,N grips: no mechanism bound, so
+the run measures wiring overhead and not a cost of enforcement. Whether
 threshold-level insensitivity to gentle closes is acceptable
 conservatism or a coverage gap depends on the deployment's hazard model;
 we state it as a measured property of these thresholds.
